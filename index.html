@@ -8,842 +8,769 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- MQTT.js via CDN (WebSocket support) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet"/>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #0a0f1e;
-    --bg2: #0f1629;
-    --bg3: #141d35;
+    --bg:      #0a0f1e;
+    --bg2:     #0f1629;
+    --bg3:     #141d35;
     --surface: #1a2540;
-    --surface2: #1f2d4a;
-    --border: rgba(99,179,237,0.12);
+    --surface2:#1f2d4a;
+    --border:  rgba(99,179,237,0.12);
     --border2: rgba(99,179,237,0.22);
-    --green: #22d07a;
-    --green2: #16a85f;
+    --green:   #22d07a;
+    --green2:  #16a85f;
     --green-glow: rgba(34,208,122,0.18);
-    --blue: #4fa3f7;
-    --blue2: #2d7dd2;
+    --blue:    #4fa3f7;
+    --blue2:   #2d7dd2;
     --blue-glow: rgba(79,163,247,0.18);
-    --orange: #f97316;
+    --orange:  #f97316;
     --orange2: #ea6c10;
     --orange-glow: rgba(249,115,22,0.18);
-    --red: #f25f5c;
-    --text: #e8f0fe;
-    --text2: #8fa3c8;
-    --text3: #5a7299;
-    --font-head: 'Syne', sans-serif;
-    --font-body: 'DM Sans', sans-serif;
-    --r: 16px;
+    --red:     #f25f5c;
+    --text:    #e8f0fe;
+    --text2:   #8fa3c8;
+    --text3:   #5a7299;
+    --font-head:'Syne', sans-serif;
+    --font-body:'DM Sans', sans-serif;
+    --r:  16px;
     --r2: 12px;
-    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --shadow:  0 8px 32px rgba(0,0,0,0.4);
     --shadow2: 0 2px 12px rgba(0,0,0,0.3);
   }
-
   .light {
-    --bg: #f0f4ff;
-    --bg2: #e8eef8;
-    --bg3: #dde6f4;
+    --bg:      #f0f4ff;
+    --bg2:     #e8eef8;
+    --bg3:     #dde6f4;
     --surface: #ffffff;
-    --surface2: #f5f8ff;
-    --border: rgba(45,125,210,0.15);
+    --surface2:#f5f8ff;
+    --border:  rgba(45,125,210,0.15);
     --border2: rgba(45,125,210,0.28);
-    --text: #0f1629;
-    --text2: #3d5278;
-    --text3: #7a9bc4;
-    --shadow: 0 8px 32px rgba(79,123,200,0.12);
+    --text:    #0f1629;
+    --text2:   #3d5278;
+    --text3:   #7a9bc4;
+    --shadow:  0 8px 32px rgba(79,123,200,0.12);
     --shadow2: 0 2px 12px rgba(79,123,200,0.1);
     --green-glow: rgba(34,208,122,0.1);
-    --blue-glow: rgba(79,163,247,0.1);
-    --orange-glow: rgba(249,115,22,0.1);
+    --blue-glow:  rgba(79,163,247,0.1);
+    --orange-glow:rgba(249,115,22,0.1);
   }
 
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-body);
-    font-size: 14px;
-    min-height: 100vh;
-    transition: background 0.3s, color 0.3s;
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-body); font-size: 14px;
+    min-height: 100vh; transition: background .3s,color .3s;
     overflow-x: hidden;
   }
 
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
 
-  /* ANIMATIONS */
-  @keyframes fadeUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
-  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @keyframes glow { 0%,100%{box-shadow:0 0 20px var(--green-glow);} 50%{box-shadow:0 0 40px var(--green-glow), 0 0 60px var(--green-glow);} }
-  @keyframes slideIn { from{transform:translateX(-100%);opacity:0;} to{transform:translateX(0);opacity:1;} }
-  @keyframes countUp { from{opacity:0;transform:scale(0.8);} to{opacity:1;transform:scale(1);} }
-  @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-  @keyframes ripple { 0%{transform:scale(0);opacity:0.6;} 100%{transform:scale(4);opacity:0;} }
-  @keyframes floatDot { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+  /* ── ANIMATIONS ─────────────────────────────────────────────── */
+  @keyframes fadeUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeIn   { from{opacity:0} to{opacity:1} }
+  @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:.45} }
+  @keyframes spin     { to{transform:rotate(360deg)} }
+  @keyframes glow     { 0%,100%{box-shadow:0 0 20px var(--green-glow)} 50%{box-shadow:0 0 40px var(--green-glow),0 0 60px var(--green-glow)} }
+  @keyframes countUp  { from{opacity:0;transform:scale(.85)} to{opacity:1;transform:scale(1)} }
+  @keyframes blink    { 0%,100%{opacity:1} 50%{opacity:.2} }
+  @keyframes liveRing { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(2.4);opacity:0} }
+  @keyframes shimmer  { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
 
-  .fade-up { animation: fadeUp 0.5s ease both; }
-  .fade-up-1 { animation-delay: 0.05s; }
-  .fade-up-2 { animation-delay: 0.1s; }
-  .fade-up-3 { animation-delay: 0.15s; }
-  .fade-up-4 { animation-delay: 0.2s; }
-  .fade-up-5 { animation-delay: 0.25s; }
+  .fade-up   { animation: fadeUp .5s ease both; }
+  .fade-up-1 { animation-delay:.05s }
+  .fade-up-2 { animation-delay:.10s }
+  .fade-up-3 { animation-delay:.15s }
+  .fade-up-4 { animation-delay:.20s }
+  .fade-up-5 { animation-delay:.25s }
 
-  /* ───── LOGIN ───── */
+  /* ── LOGIN ───────────────────────────────────────────────────── */
   .login-wrap {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    background: var(--bg);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    position:relative; overflow:hidden; background:var(--bg);
   }
-
-  .login-bg {
-    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  .login-bg { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+  .login-orb { position:absolute; border-radius:50%; filter:blur(80px); }
+  .orb1 { width:520px;height:520px;background:rgba(34,208,122,.08);top:-120px;left:-120px }
+  .orb2 { width:420px;height:420px;background:rgba(79,163,247,.08);bottom:-90px;right:-90px }
+  .orb3 { width:320px;height:320px;background:rgba(249,115,22,.06);top:35%;right:15% }
+  .login-grid {
+    position:absolute; inset:0;
+    background-image:linear-gradient(var(--border) 1px,transparent 1px),
+                     linear-gradient(90deg,var(--border) 1px,transparent 1px);
+    background-size:40px 40px; opacity:.5;
   }
-  .login-bg-orb {
-    position: absolute; border-radius: 50%; filter: blur(80px);
-  }
-  .orb1 { width:500px;height:500px;background:rgba(34,208,122,0.08);top:-100px;left:-100px; }
-  .orb2 { width:400px;height:400px;background:rgba(79,163,247,0.08);bottom:-80px;right:-80px; }
-  .orb3 { width:300px;height:300px;background:rgba(249,115,22,0.06);top:40%;right:20%; }
-
-  .login-grid-bg {
-    position: absolute; inset: 0;
-    background-image: linear-gradient(var(--border) 1px, transparent 1px),
-                      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 40px 40px;
-    opacity: 0.5;
-  }
-
   .login-card {
-    position: relative; z-index: 1;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 24px;
-    padding: 48px;
-    width: 100%;
-    max-width: 440px;
-    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.05);
-    animation: fadeUp 0.6s ease;
+    position:relative; z-index:1;
+    background:var(--surface); border:1px solid var(--border2);
+    border-radius:24px; padding:48px;
+    width:100%; max-width:440px;
+    box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.05);
+    animation:fadeUp .6s ease;
   }
-
-  .login-logo {
-    display: flex; align-items: center; gap: 12px;
-    margin-bottom: 32px;
-  }
+  .login-logo { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
   .login-logo-icon {
-    width: 48px; height: 48px;
-    background: linear-gradient(135deg, var(--green), var(--blue2));
-    border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
-    animation: glow 3s ease infinite;
-    flex-shrink: 0;
+    width:48px; height:48px; flex-shrink:0;
+    background:linear-gradient(135deg,var(--green),var(--blue2));
+    border-radius:14px; display:flex; align-items:center; justify-content:center;
+    font-size:22px; animation:glow 3s ease infinite;
   }
-  .login-logo-text { font-family: var(--font-head); font-size: 22px; font-weight: 800; }
-  .login-logo-sub { font-size: 11px; color: var(--text2); letter-spacing: 0.1em; text-transform: uppercase; }
+  .login-logo-text { font-family:var(--font-head); font-size:22px; font-weight:800 }
+  .login-logo-sub  { font-size:11px; color:var(--text2); letter-spacing:.1em; text-transform:uppercase }
+  .login-title { font-family:var(--font-head); font-size:28px; font-weight:700; margin-bottom:6px }
+  .login-sub   { color:var(--text2); margin-bottom:32px; font-size:14px }
 
-  .login-title { font-family: var(--font-head); font-size: 28px; font-weight: 700; margin-bottom: 6px; }
-  .login-sub { color: var(--text2); margin-bottom: 32px; font-size: 14px; }
+  .role-tabs { display:flex; gap:8px; margin-bottom:28px; background:var(--bg2); border-radius:12px; padding:4px }
+  .role-tab  { flex:1; padding:10px; border:none; border-radius:10px; font-family:var(--font-body); font-size:14px; font-weight:500; cursor:pointer; transition:all .25s; color:var(--text2); background:transparent }
+  .role-tab.active { background:var(--surface); color:var(--text); box-shadow:var(--shadow2) }
 
-  .role-tabs {
-    display: flex; gap: 8px; margin-bottom: 28px;
-    background: var(--bg2);
-    border-radius: 12px;
-    padding: 4px;
-  }
-  .role-tab {
-    flex: 1; padding: 10px; border: none; border-radius: 10px;
-    font-family: var(--font-body); font-size: 14px; font-weight: 500;
-    cursor: pointer; transition: all 0.25s;
-    color: var(--text2); background: transparent;
-  }
-  .role-tab.active {
-    background: var(--surface); color: var(--text);
-    box-shadow: var(--shadow2);
-  }
+  .form-group  { margin-bottom:18px }
+  .form-label  { font-size:12px; font-weight:600; color:var(--text2); letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px; display:block }
+  .form-input  { width:100%; padding:12px 14px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--r2); color:var(--text); font-family:var(--font-body); font-size:14px; outline:none; transition:border-color .2s,box-shadow .2s }
+  .form-input:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-glow) }
+  .form-input::placeholder { color:var(--text3) }
 
-  .form-group { margin-bottom: 18px; }
-  .form-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; display: block; }
-  .form-input {
-    width: 100%; padding: 14px 16px;
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: var(--r2); color: var(--text);
-    font-family: var(--font-body); font-size: 14px;
-    outline: none; transition: border-color 0.2s, box-shadow 0.2s;
-  }
-  .form-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-glow); }
-  .form-input::placeholder { color: var(--text3); }
+  .btn-primary { width:100%; padding:14px; background:linear-gradient(135deg,var(--green2),var(--green)); border:none; border-radius:var(--r2); color:#fff; font-family:var(--font-body); font-size:15px; font-weight:600; cursor:pointer; transition:all .25s; letter-spacing:.02em }
+  .btn-primary:hover { transform:translateY(-1px); box-shadow:0 8px 24px rgba(34,208,122,.35) }
+  .btn-primary:disabled { opacity:.7; cursor:not-allowed; transform:none }
 
-  .btn-primary {
-    width: 100%; padding: 14px;
-    background: linear-gradient(135deg, var(--green2), var(--green));
-    border: none; border-radius: var(--r2);
-    color: #fff; font-family: var(--font-body); font-size: 15px; font-weight: 600;
-    cursor: pointer; transition: all 0.25s;
-    position: relative; overflow: hidden;
-    letter-spacing: 0.02em;
-  }
-  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(34,208,122,0.35); }
-  .btn-primary:active { transform: translateY(0); }
+  .login-hint { margin-top:18px; padding:12px 14px; background:var(--bg2); border-radius:var(--r2); font-size:12px; color:var(--text2); border:1px solid var(--border) }
+  .login-hint strong { color:var(--text) }
 
-  .login-hint {
-    margin-top: 16px; padding: 12px 16px;
-    background: var(--bg2); border-radius: var(--r2);
-    font-size: 12px; color: var(--text2);
-    border: 1px solid var(--border);
-  }
-  .login-hint strong { color: var(--text); }
+  /* ── APP SHELL ───────────────────────────────────────────────── */
+  .app-shell { display:flex; min-height:100vh }
 
-  /* ───── APP SHELL ───── */
-  .app-shell { display: flex; min-height: 100vh; }
-
-  /* ───── SIDEBAR ───── */
+  /* ── SIDEBAR ─────────────────────────────────────────────────── */
   .sidebar {
-    width: 260px; min-height: 100vh;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex; flex-direction: column;
-    position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
-    transition: transform 0.3s ease, width 0.3s ease;
-    overflow-y: auto; overflow-x: hidden;
+    width:260px; min-height:100vh;
+    background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column;
+    position:fixed; left:0; top:0; bottom:0; z-index:100;
+    transition:transform .3s ease, width .3s ease;
+    overflow-y:auto; overflow-x:hidden;
   }
-  .sidebar.collapsed { width: 72px; }
-  .sidebar.mobile-hidden { transform: translateX(-100%); }
+  .sidebar.collapsed  { width:72px }
+  .sidebar.mob-hidden { transform:translateX(-100%) }
 
   .sidebar-header {
-    padding: 24px 20px 20px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 12px;
-    position: sticky; top: 0; background: var(--surface); z-index: 1;
-    flex-shrink: 0;
+    padding:22px 18px 18px; border-bottom:1px solid var(--border);
+    display:flex; align-items:center; gap:12px;
+    position:sticky; top:0; background:var(--surface); z-index:1; flex-shrink:0;
   }
-  .sidebar-logo-icon {
-    width: 38px; height: 38px; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--green), var(--blue2));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  .sidebar-logo-text { font-family: var(--font-head); font-size: 18px; font-weight: 800; white-space: nowrap; overflow: hidden; }
-  .sidebar-logo-sub { font-size: 10px; color: var(--text2); letter-spacing: 0.1em; text-transform: uppercase; }
+  .sidebar-logo-icon { width:36px;height:36px;flex-shrink:0; background:linear-gradient(135deg,var(--green),var(--blue2)); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:17px }
+  .sidebar-logo-text { font-family:var(--font-head); font-size:17px; font-weight:800; white-space:nowrap }
+  .sidebar-logo-sub  { font-size:10px; color:var(--text2); letter-spacing:.1em; text-transform:uppercase }
 
-  .sidebar-section-title {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--text3); padding: 20px 20px 8px; white-space: nowrap; overflow: hidden;
-  }
-  .sidebar.collapsed .sidebar-section-title { opacity: 0; }
+  .sidebar-section { font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text3); padding:18px 18px 6px; white-space:nowrap }
+  .sidebar.collapsed .sidebar-section { opacity:0 }
 
   .nav-item {
-    display: flex; align-items: center; gap: 14px;
-    padding: 11px 20px; margin: 2px 10px;
-    border-radius: 10px; cursor: pointer;
-    color: var(--text2); font-size: 14px; font-weight: 500;
-    transition: all 0.2s; white-space: nowrap; overflow: hidden;
-    border: none; background: transparent; width: calc(100% - 20px);
-    text-align: left; position: relative;
+    display:flex; align-items:center; gap:13px;
+    padding:11px 18px; margin:2px 8px;
+    border-radius:10px; cursor:pointer;
+    color:var(--text2); font-size:14px; font-weight:500;
+    transition:all .2s; white-space:nowrap; overflow:hidden;
+    border:none; background:transparent; width:calc(100% - 16px); text-align:left; position:relative;
   }
-  .nav-item:hover { background: var(--surface2); color: var(--text); }
-  .nav-item.active { background: linear-gradient(135deg, rgba(34,208,122,0.15), rgba(79,163,247,0.1)); color: var(--green); }
-  .nav-item.active::before {
-    content: ''; position: absolute; left: 0; top: 20%; bottom: 20%;
-    width: 3px; background: var(--green); border-radius: 0 3px 3px 0; margin-left: -10px;
-  }
-  .nav-icon { font-size: 18px; flex-shrink: 0; width: 22px; text-align: center; }
-  .nav-label { flex: 1; }
-  .nav-badge {
-    font-size: 10px; font-weight: 700; padding: 2px 7px;
-    border-radius: 20px; background: var(--orange); color: #fff;
-  }
-  .sidebar.collapsed .nav-label, .sidebar.collapsed .nav-badge, .sidebar.collapsed .sidebar-logo-text, .sidebar.collapsed .sidebar-logo-sub { display: none; }
-  .sidebar.collapsed .nav-item { padding: 11px 0; justify-content: center; width: 100%; margin: 2px 0; border-radius: 0; }
-  .sidebar.collapsed .nav-item.active::before { left: 0; margin-left: 0; }
+  .nav-item:hover { background:var(--surface2); color:var(--text) }
+  .nav-item.active { background:linear-gradient(135deg,rgba(34,208,122,.15),rgba(79,163,247,.1)); color:var(--green) }
+  .nav-item.active::before { content:''; position:absolute; left:0; top:20%; bottom:20%; width:3px; background:var(--green); border-radius:0 3px 3px 0; margin-left:-8px }
+  .nav-icon  { font-size:17px; flex-shrink:0; width:20px; text-align:center }
+  .nav-label { flex:1 }
+  .sidebar.collapsed .nav-label, .sidebar.collapsed .sidebar-logo-text, .sidebar.collapsed .sidebar-logo-sub { display:none }
+  .sidebar.collapsed .nav-item { padding:11px 0; justify-content:center; width:100%; margin:2px 0; border-radius:0 }
+  .sidebar.collapsed .nav-item.active::before { left:0; margin-left:0 }
 
-  .sidebar-footer {
-    margin-top: auto; padding: 16px;
-    border-top: 1px solid var(--border);
-    flex-shrink: 0;
-  }
-  .user-card {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 12px; border-radius: 10px;
-    background: var(--bg2); overflow: hidden;
-  }
-  .user-avatar {
-    width: 36px; height: 36px; border-radius: 10px;
-    background: linear-gradient(135deg, var(--blue), var(--green));
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
-  }
-  .user-name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .user-role { font-size: 11px; color: var(--text2); text-transform: capitalize; }
-  .sidebar.collapsed .user-card { padding: 8px; justify-content: center; }
-  .sidebar.collapsed .user-info { display: none; }
+  .sidebar-footer { margin-top:auto; padding:14px; border-top:1px solid var(--border); flex-shrink:0 }
+  .user-card { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; background:var(--bg2); overflow:hidden }
+  .user-avatar { width:34px;height:34px; border-radius:9px; background:linear-gradient(135deg,var(--blue),var(--green)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0 }
+  .user-name { font-weight:600; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .user-role-label { font-size:10px; color:var(--text2); text-transform:capitalize }
+  .sidebar.collapsed .user-card { padding:8px; justify-content:center }
+  .sidebar.collapsed .user-info { display:none }
 
-  /* ───── MAIN CONTENT ───── */
-  .main { margin-left: 260px; flex: 1; transition: margin-left 0.3s; min-width: 0; }
-  .main.collapsed { margin-left: 72px; }
+  /* ── MAIN ────────────────────────────────────────────────────── */
+  .main { margin-left:260px; flex:1; transition:margin-left .3s; min-width:0 }
+  .main.collapsed { margin-left:72px }
 
   .topbar {
-    height: 64px; background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 24px; position: sticky; top: 0; z-index: 50;
-    gap: 16px;
+    height:64px; background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 24px; position:sticky; top:0; z-index:50; gap:16px;
   }
-  .topbar-left { display: flex; align-items: center; gap: 16px; }
-  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .topbar-left  { display:flex; align-items:center; gap:14px }
+  .topbar-right { display:flex; align-items:center; gap:10px }
 
   .icon-btn {
-    width: 38px; height: 38px; border-radius: 10px;
-    background: var(--surface2); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer; font-size: 16px; transition: all 0.2s;
-    flex-shrink: 0;
+    width:36px; height:36px; border-radius:9px;
+    background:var(--surface2); border:1px solid var(--border);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; font-size:15px; transition:all .2s; flex-shrink:0;
   }
-  .icon-btn:hover { background: var(--bg3); transform: translateY(-1px); }
+  .icon-btn:hover { background:var(--bg3); transform:translateY(-1px) }
 
-  .page-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; }
-  .page-subtitle { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .page-title    { font-family:var(--font-head); font-size:19px; font-weight:700 }
+  .page-subtitle { font-size:12px; color:var(--text2); margin-top:1px }
 
-  .notif-btn { position: relative; }
-  .notif-dot {
-    position: absolute; top: 6px; right: 6px;
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--orange); border: 2px solid var(--surface);
-    animation: pulse 2s infinite;
+  .profile-badge { display:flex; align-items:center; gap:9px }
+  .profile-avatar { width:34px;height:34px; border-radius:9px; background:linear-gradient(135deg,var(--blue),var(--green)); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:#fff; flex-shrink:0 }
+  .profile-name { font-size:13px; font-weight:600 }
+  .profile-role { font-size:10px; color:var(--text2); text-transform:capitalize }
+
+  /* MQTT STATUS PILL */
+  .mqtt-pill {
+    display:flex; align-items:center; gap:7px;
+    padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600;
+    border:1px solid; transition:all .4s;
   }
+  .mqtt-pill.connected    { background:rgba(34,208,122,.12); border-color:rgba(34,208,122,.3); color:var(--green) }
+  .mqtt-pill.disconnected { background:rgba(242,95,92,.12);  border-color:rgba(242,95,92,.3);  color:var(--red) }
+  .mqtt-pill.connecting   { background:rgba(249,115,22,.12); border-color:rgba(249,115,22,.3); color:var(--orange) }
+  .mqtt-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0 }
+  .mqtt-dot.connected    { background:var(--green); animation:pulse 2s infinite }
+  .mqtt-dot.disconnected { background:var(--red) }
+  .mqtt-dot.connecting   { background:var(--orange); animation:blink 1s infinite }
 
-  .theme-btn { font-size: 18px; }
+  /* ── PAGE LAYOUT ─────────────────────────────────────────────── */
+  .page { padding:26px; animation:fadeIn .35s ease }
 
-  /* ───── PAGE CONTENT ───── */
-  .page { padding: 28px; animation: fadeIn 0.35s ease; }
+  .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:18px; margin-bottom:26px }
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:20px }
+  .grid-3 { display:grid; grid-template-columns:2fr 1fr; gap:20px; margin-bottom:20px }
 
-  /* ───── STAT CARDS ───── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 20px; margin-bottom: 28px;
-  }
-
+  /* ── STAT CARDS ─────────────────────────────────────────────── */
   .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    padding: 24px;
-    position: relative; overflow: hidden;
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: default;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--r);
+    padding:22px; position:relative; overflow:hidden;
+    transition:transform .2s, box-shadow .2s; cursor:default;
   }
-  .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-  .stat-card::after {
-    content: ''; position: absolute;
-    inset: 0; border-radius: var(--r);
-    opacity: 0; transition: opacity 0.2s;
-    background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.04), transparent 60%);
-  }
-  .stat-card:hover::after { opacity: 1; }
+  .stat-card:hover { transform:translateY(-3px); box-shadow:var(--shadow) }
+  .stat-accent { width:46px;height:46px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:20px; margin-bottom:14px }
+  .accent-green  { background:var(--green-glow) }
+  .accent-blue   { background:var(--blue-glow) }
+  .accent-orange { background:var(--orange-glow) }
+  .accent-red    { background:rgba(242,95,92,.15) }
 
-  .stat-accent {
-    width: 48px; height: 48px; border-radius: 14px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; margin-bottom: 16px;
-  }
-  .accent-green { background: var(--green-glow); }
-  .accent-blue { background: var(--blue-glow); }
-  .accent-orange { background: var(--orange-glow); }
-  .accent-red { background: rgba(242,95,92,0.15); }
+  .stat-label { font-size:11px; font-weight:600; color:var(--text2); letter-spacing:.06em; text-transform:uppercase; margin-bottom:7px }
+  .stat-value { font-family:var(--font-head); font-size:30px; font-weight:800; line-height:1; margin-bottom:7px; animation:countUp .5s ease }
+  .stat-change { font-size:12px; display:flex; align-items:center; gap:4px }
+  .stat-change.up      { color:var(--green) }
+  .stat-change.down    { color:var(--red) }
+  .stat-change.neutral { color:var(--text2) }
 
-  .stat-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
-  .stat-value { font-family: var(--font-head); font-size: 32px; font-weight: 800; line-height: 1; margin-bottom: 8px; animation: countUp 0.5s ease; }
-  .stat-change { font-size: 12px; display: flex; align-items: center; gap: 4px; }
-  .stat-change.up { color: var(--green); }
-  .stat-change.down { color: var(--red); }
-  .stat-change.neutral { color: var(--text2); }
+  .stat-glow-line { position:absolute; bottom:0; left:0; right:0; height:2px; border-radius:0 0 var(--r) var(--r) }
+  .glow-green  { background:linear-gradient(90deg,transparent,var(--green),transparent) }
+  .glow-blue   { background:linear-gradient(90deg,transparent,var(--blue),transparent) }
+  .glow-orange { background:linear-gradient(90deg,transparent,var(--orange),transparent) }
 
-  .stat-glow-line {
-    position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
-    border-radius: 0 0 var(--r) var(--r);
-  }
-  .glow-green { background: linear-gradient(90deg, transparent, var(--green), transparent); }
-  .glow-blue { background: linear-gradient(90deg, transparent, var(--blue), transparent); }
-  .glow-orange { background: linear-gradient(90deg, transparent, var(--orange), transparent); }
+  /* ── CARDS ───────────────────────────────────────────────────── */
+  .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:22px }
+  .card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:18px; gap:12px }
+  .card-title  { font-family:var(--font-head); font-size:15px; font-weight:700 }
+  .card-sub    { font-size:12px; color:var(--text2); margin-top:3px }
 
-  /* ───── CARDS ───── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--r);
-    padding: 24px;
-    margin-bottom: 20px;
+  /* ── LIVE INDICATOR ─────────────────────────────────────────── */
+  .live-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;
+    background:rgba(34,208,122,.12); border:1px solid rgba(34,208,122,.25); color:var(--green);
   }
-  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; gap: 12px; }
-  .card-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; }
-  .card-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+  .live-dot-wrap { position:relative; width:8px; height:8px }
+  .live-dot { width:8px;height:8px; border-radius:50%; background:var(--green) }
+  .live-ring { position:absolute; inset:0; border-radius:50%; border:2px solid var(--green); animation:liveRing 1.5s ease-out infinite }
 
-  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-  @media(max-width: 900px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+  /* ── BIG GAS VALUE ───────────────────────────────────────────── */
+  .gas-hero { text-align:center; padding:36px 20px }
+  .gas-num  { font-family:var(--font-head); font-size:72px; font-weight:800; line-height:1; letter-spacing:-2px }
+  .gas-num.live { color:var(--green); text-shadow:0 0 40px rgba(34,208,122,.35) }
+  .gas-num.nodata { color:var(--text3) }
+  .gas-unit { font-size:22px; font-weight:500; color:var(--text2); margin-top:4px }
+  .gas-ts   { font-size:12px; color:var(--text3); margin-top:10px }
 
-  /* ───── STATUS BADGE ───── */
-  .badge {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 12px; border-radius: 20px;
-    font-size: 12px; font-weight: 600;
-  }
-  .badge-dot { width: 6px; height: 6px; border-radius: 50%; }
-  .badge-paid { background: rgba(34,208,122,0.15); color: var(--green); }
-  .badge-paid .badge-dot { background: var(--green); animation: pulse 2s infinite; }
-  .badge-pending { background: var(--orange-glow); color: var(--orange); }
-  .badge-pending .badge-dot { background: var(--orange); }
-  .badge-overdue { background: rgba(242,95,92,0.15); color: var(--red); }
-  .badge-overdue .badge-dot { background: var(--red); }
-  .badge-high { background: var(--orange-glow); color: var(--orange); }
-  .badge-normal { background: var(--green-glow); color: var(--green); }
+  /* ── METER BAR ───────────────────────────────────────────────── */
+  .meter-bar  { height:8px; background:var(--bg3); border-radius:100px; overflow:hidden; margin-top:6px }
+  .meter-fill { height:100%; border-radius:100px; background:linear-gradient(90deg,var(--green2),var(--green)); transition:width .6s ease }
+  .meter-fill.warning { background:linear-gradient(90deg,#f97316,#fb923c) }
+  .meter-fill.danger  { background:linear-gradient(90deg,#ef4444,#f87171) }
+  .meter-label { display:flex; justify-content:space-between; font-size:12px; color:var(--text2); margin-bottom:4px }
 
-  /* ───── TABLE ───── */
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; }
-  th {
-    text-align: left; padding: 12px 16px;
-    font-size: 11px; font-weight: 700;
-    color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-  }
-  td {
-    padding: 14px 16px; border-bottom: 1px solid var(--border);
-    font-size: 13px; color: var(--text2);
-    transition: background 0.15s;
-  }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--surface2); }
-  td strong { color: var(--text); font-weight: 600; }
+  /* ── CHART ───────────────────────────────────────────────────── */
+  .chart-wrap { position:relative; height:220px }
 
-  /* ───── BUTTONS ───── */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 10px 20px; border-radius: 10px;
-    font-family: var(--font-body); font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s; border: none;
-    letter-spacing: 0.02em; position: relative; overflow: hidden;
-  }
-  .btn::after {
-    content: ''; position: absolute;
-    width: 20px; height: 20px; border-radius: 50%;
-    background: rgba(255,255,255,0.3);
-    transform: scale(0); opacity: 0; transition: transform 0.4s, opacity 0.4s;
-  }
-  .btn:active::after { animation: ripple 0.4s ease; }
+  /* ── TABLE ───────────────────────────────────────────────────── */
+  .table-wrap { overflow-x:auto }
+  table { width:100%; border-collapse:collapse }
+  th { font-size:11px; font-weight:700; color:var(--text2); letter-spacing:.06em; text-transform:uppercase; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap }
+  td { padding:13px 14px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle }
+  tr:last-child td { border-bottom:none }
+  tr:hover td { background:var(--surface2) }
 
-  .btn-green { background: linear-gradient(135deg, var(--green2), var(--green)); color: #fff; }
-  .btn-green:hover { box-shadow: 0 6px 20px rgba(34,208,122,0.3); transform: translateY(-1px); }
-  .btn-blue { background: linear-gradient(135deg, var(--blue2), var(--blue)); color: #fff; }
-  .btn-blue:hover { box-shadow: 0 6px 20px rgba(79,163,247,0.3); transform: translateY(-1px); }
-  .btn-orange { background: linear-gradient(135deg, var(--orange2), var(--orange)); color: #fff; }
-  .btn-orange:hover { box-shadow: 0 6px 20px rgba(249,115,22,0.3); transform: translateY(-1px); }
-  .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
-  .btn-ghost:hover { color: var(--text); background: var(--bg3); }
-  .btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+  /* ── BADGE ───────────────────────────────────────────────────── */
+  .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; white-space:nowrap }
+  .badge-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0 }
+  .badge-online  { background:rgba(34,208,122,.15);  color:var(--green);  border:1px solid rgba(34,208,122,.25)  }
+  .badge-online .badge-dot { background:var(--green); animation:pulse 2s infinite }
+  .badge-offline { background:rgba(242,95,92,.13);   color:var(--red);    border:1px solid rgba(242,95,92,.25)   }
+  .badge-offline .badge-dot { background:var(--red) }
+  .badge-nodata  { background:rgba(90,114,153,.13);  color:var(--text2);  border:1px solid var(--border) }
+  .badge-nodata .badge-dot { background:var(--text3) }
 
-  /* ───── USAGE METER ───── */
-  .meter-wrap { margin: 20px 0; }
-  .meter-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
-  .meter-bar { height: 10px; background: var(--bg2); border-radius: 10px; overflow: hidden; }
-  .meter-fill {
-    height: 100%; border-radius: 10px;
-    background: linear-gradient(90deg, var(--green2), var(--green));
-    transition: width 1s cubic-bezier(0.4,0,0.2,1);
-    position: relative;
-  }
-  .meter-fill::after {
-    content: '';
-    position: absolute; right: 0; top: 0; bottom: 0;
-    width: 60px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
-    animation: shimmer 2s infinite;
-  }
-  .meter-fill.warning { background: linear-gradient(90deg, var(--orange2), var(--orange)); }
-  .meter-fill.danger { background: linear-gradient(90deg, #e53e3e, var(--red)); }
+  /* ── ALERT BANNER ────────────────────────────────────────────── */
+  .alert { display:flex; align-items:flex-start; gap:12px; padding:14px 18px; border-radius:var(--r2); margin-bottom:20px; border:1px solid }
+  .alert-warn    { background:rgba(249,115,22,.1);  border-color:rgba(249,115,22,.3);  color:var(--orange) }
+  .alert-info    { background:rgba(79,163,247,.1);  border-color:rgba(79,163,247,.3);  color:var(--blue) }
+  .alert-success { background:rgba(34,208,122,.1);  border-color:rgba(34,208,122,.3);  color:var(--green) }
+  .alert-icon    { font-size:18px; flex-shrink:0; margin-top:1px }
+  .alert-title   { font-weight:600; font-size:13px }
+  .alert-msg     { font-size:12px; color:var(--text2); margin-top:3px }
 
-  /* ───── ALERT BANNER ───── */
-  .alert-banner {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 18px; border-radius: var(--r2);
-    margin-bottom: 20px; border: 1px solid;
-    animation: fadeUp 0.4s ease;
-  }
-  .alert-icon { font-size: 20px; flex-shrink: 0; }
-  .alert-text { flex: 1; }
-  .alert-title { font-weight: 600; font-size: 13px; }
-  .alert-sub { font-size: 12px; margin-top: 2px; }
-  .alert-warning { background: var(--orange-glow); border-color: rgba(249,115,22,0.3); color: var(--orange); }
-  .alert-success { background: var(--green-glow); border-color: rgba(34,208,122,0.3); color: var(--green); }
-  .alert-info { background: var(--blue-glow); border-color: rgba(79,163,247,0.3); color: var(--blue); }
+  /* ── MQTT CONFIG MODAL ───────────────────────────────────────── */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(6px); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; animation:fadeIn .2s ease }
+  .modal-card { background:var(--surface); border:1px solid var(--border2); border-radius:24px; padding:36px; width:100%; max-width:480px; box-shadow:var(--shadow); animation:fadeUp .35s ease }
+  .modal-title { font-family:var(--font-head); font-size:20px; font-weight:700; margin-bottom:6px }
+  .modal-sub   { color:var(--text2); font-size:13px; margin-bottom:24px }
+  .modal-close { position:absolute; top:18px; right:18px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:16px; color:var(--text2) }
+  .modal-close:hover { color:var(--text) }
 
-  /* ───── PAYMENT CARD ───── */
-  .payment-card {
-    background: linear-gradient(135deg, #1a2f50, #142540);
-    border: 1px solid rgba(79,163,247,0.2);
-    border-radius: 20px;
-    padding: 28px;
-    position: relative; overflow: hidden;
-  }
-  .payment-card::before {
-    content: '💳';
-    position: absolute; right: 24px; top: 24px; font-size: 32px; opacity: 0.15;
-  }
-  .payment-amount { font-family: var(--font-head); font-size: 42px; font-weight: 800; margin: 12px 0; }
-  .payment-amount span { font-size: 22px; color: var(--text2); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:9px 18px; border-radius:10px; font-family:var(--font-body); font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all .2s; white-space:nowrap }
+  .btn-green  { background:linear-gradient(135deg,var(--green2),var(--green)); color:#fff }
+  .btn-green:hover { box-shadow:0 6px 20px rgba(34,208,122,.3) }
+  .btn-blue   { background:linear-gradient(135deg,var(--blue2),var(--blue));  color:#fff }
+  .btn-blue:hover  { box-shadow:0 6px 20px rgba(79,163,247,.3) }
+  .btn-ghost  { background:var(--surface2); border:1px solid var(--border); color:var(--text2) }
+  .btn-ghost:hover { color:var(--text) }
+  .btn-danger { background:rgba(242,95,92,.15); border:1px solid rgba(242,95,92,.3); color:var(--red) }
+  .btn-danger:hover { background:rgba(242,95,92,.25) }
+  .btn-sm { padding:6px 12px; font-size:12px }
+  .btn-full { width:100% }
 
-  /* ───── CHART CONTAINER ───── */
-  .chart-container { position: relative; height: 260px; }
+  .input-row { display:flex; gap:12px }
 
-  /* ───── MINI CHART ───── */
-  .mini-chart { height: 50px; }
+  /* ── CUSTOM SELECT ───────────────────────────────────────────── */
+  .custom-select { padding:8px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--r2); color:var(--text); font-family:var(--font-body); font-size:13px; outline:none; cursor:pointer }
+  .custom-select:focus { border-color:var(--blue) }
 
-  /* ───── NOTIF PANEL ───── */
-  .notif-panel {
-    position: fixed; right: 20px; top: 80px; z-index: 200;
-    width: 320px; background: var(--surface);
-    border: 1px solid var(--border2); border-radius: var(--r);
-    box-shadow: var(--shadow);
-    animation: fadeUp 0.25s ease;
-    overflow: hidden;
+  /* ── MOBILE OVERLAY ─────────────────────────────────────────── */
+  .mob-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:99 }
+  .mob-overlay.show { display:block }
+
+  /* ── EMPTY STATE ─────────────────────────────────────────────── */
+  .empty-state { text-align:center; padding:48px 20px; color:var(--text2) }
+  .empty-icon  { font-size:40px; margin-bottom:12px }
+  .empty-text  { font-size:14px; font-weight:500 }
+  .empty-sub   { font-size:12px; color:var(--text3); margin-top:4px }
+
+  /* ── HISTORY LOG ─────────────────────────────────────────────── */
+  .log-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border) }
+  .log-row:last-child { border-bottom:none }
+  .log-icon { width:32px;height:32px; border-radius:8px; background:var(--green-glow); display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0 }
+  .log-body { flex:1 }
+  .log-title { font-size:13px; font-weight:600 }
+  .log-time  { font-size:11px; color:var(--text3); margin-top:2px }
+  .log-val   { font-family:var(--font-head); font-size:15px; font-weight:700; color:var(--green) }
+
+  /* ── USER ID CHIP ────────────────────────────────────────────── */
+  .user-id { font-family:monospace; font-size:11px; background:var(--bg2); padding:3px 8px; border-radius:6px; color:var(--blue); border:1px solid var(--border) }
+
+  /* ── RESPONSIVE ─────────────────────────────────────────────── */
+  @media (max-width:768px) {
+    .sidebar { transform:translateX(-100%) }
+    .sidebar.mob-open { transform:translateX(0) }
+    .main { margin-left:0 !important }
+    .grid-2, .grid-3 { grid-template-columns:1fr }
+    .stats-grid { grid-template-columns:1fr 1fr }
+    .login-card { padding:32px 24px }
+    .page { padding:16px }
+    .gas-num { font-size:54px }
+    .modal-card { padding:26px 20px }
   }
-  .notif-header { padding: 16px 20px; border-bottom: 1px solid var(--border); font-weight: 700; font-family: var(--font-head); display: flex; justify-content: space-between; align-items: center; }
-  .notif-item { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: flex-start; }
-  .notif-item:last-child { border-bottom: none; }
-  .notif-dot-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-  .notif-body .notif-title { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-  .notif-body .notif-time { font-size: 11px; color: var(--text3); }
-
-  /* ───── MOBILE OVERLAY ───── */
-  .mobile-overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-    z-index: 99; display: none;
-    animation: fadeIn 0.2s ease;
-  }
-  .mobile-overlay.show { display: block; }
-
-  @media(max-width: 768px) {
-    .sidebar { width: 260px; }
-    .sidebar.collapsed { transform: translateX(-100%); width: 260px; }
-    .main { margin-left: 0; }
-    .main.collapsed { margin-left: 0; }
-    .page { padding: 16px; }
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-    .grid-2, .grid-3 { grid-template-columns: 1fr; }
-    .topbar { padding: 0 16px; }
-  }
-  @media(max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr; }
+  @media (max-width:420px) {
+    .stats-grid { grid-template-columns:1fr }
+    .input-row  { flex-direction:column }
   }
 
-  /* ───── PROFILE BADGE ───── */
-  .profile-badge {
-    display: flex; align-items: center; gap: 10px; cursor: pointer;
-    padding: 6px 10px 6px 6px; border-radius: 12px;
-    background: var(--surface2); border: 1px solid var(--border);
-    transition: all 0.2s;
-  }
-  .profile-badge:hover { border-color: var(--border2); }
-  .profile-avatar {
-    width: 32px; height: 32px; border-radius: 8px;
-    background: linear-gradient(135deg, var(--blue), var(--green));
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 13px; color: #fff;
-  }
-  .profile-name { font-size: 13px; font-weight: 600; }
-  .profile-role { font-size: 10px; color: var(--text2); }
+  /* ── SPINNER ─────────────────────────────────────────────────── */
+  .spinner { width:16px;height:16px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .8s linear infinite; display:inline-block }
 
-  /* ───── TIMELINE ───── */
-  .timeline { display: flex; flex-direction: column; gap: 12px; }
-  .timeline-item {
-    display: flex; gap: 14px; align-items: flex-start;
-    padding: 14px; background: var(--bg2); border-radius: var(--r2);
-    border: 1px solid var(--border);
-    transition: border-color 0.2s;
-  }
-  .timeline-item:hover { border-color: var(--border2); }
-  .timeline-icon {
-    width: 36px; height: 36px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 16px; flex-shrink: 0;
-  }
-  .timeline-body { flex: 1; min-width: 0; }
-  .timeline-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
-  .timeline-meta { font-size: 12px; color: var(--text2); }
-  .timeline-amount { font-family: var(--font-head); font-weight: 700; font-size: 15px; white-space: nowrap; }
+  /* ── PULSE NUMBER ────────────────────────────────────────────── */
+  .pulse-badge { font-family:monospace; font-size:11px; background:rgba(79,163,247,.12); color:var(--blue); border:1px solid rgba(79,163,247,.2); padding:3px 8px; border-radius:6px }
 
-  /* ───── ADMIN TABLE ───── */
-  .user-row-status { display: flex; align-items: center; gap: 8px; }
-  .user-id { font-family: monospace; font-size: 12px; color: var(--text3); }
+  /* ── SCROLLABLE LOG ──────────────────────────────────────────── */
+  .log-scroll { max-height:320px; overflow-y:auto }
+  .log-scroll::-webkit-scrollbar { width:4px }
+  .log-scroll::-webkit-scrollbar-thumb { background:var(--surface2); border-radius:2px }
 
-  /* ───── SECTION HEADER ───── */
-  .section-head {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    margin-bottom: 24px; gap: 12px; flex-wrap: wrap;
-  }
-  .section-title { font-family: var(--font-head); font-size: 24px; font-weight: 700; }
-  .section-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
-
-  /* ───── EMPTY STATE ───── */
-  .empty-state { text-align: center; padding: 48px 24px; color: var(--text2); }
-  .empty-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
-  .empty-text { font-size: 15px; font-weight: 500; }
-
-  /* FLOATING DOTS BG (subtle) */
-  .float-dot {
-    position: absolute; border-radius: 50%;
-    animation: floatDot 4s ease-in-out infinite;
-    pointer-events: none;
-  }
-
-  /* ───── PROGRESS RING ───── */
-  .ring-wrap { display: flex; align-items: center; justify-content: center; position: relative; }
-  .ring-label { position: absolute; text-align: center; }
-  .ring-pct { font-family: var(--font-head); font-size: 22px; font-weight: 800; }
-  .ring-sub { font-size: 11px; color: var(--text2); }
-
-  /* CUSTOM SELECT */
-  .custom-select {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 12px;
-    color: var(--text2); font-family: var(--font-body); font-size: 12px;
-    outline: none; cursor: pointer;
-  }
-  .custom-select:focus { border-color: var(--blue); }
-
-  /* HIGHLIGHT */
-  .highlight-green { color: var(--green); }
-  .highlight-blue { color: var(--blue); }
-  .highlight-orange { color: var(--orange); }
-
-  /* DIVIDER */
-  .divider { height: 1px; background: var(--border); margin: 20px 0; }
-
-  /* INPUT GROUP */
-  .input-group { display: flex; gap: 12px; flex-wrap: wrap; }
-
-  /* CHIP */
-  .chip {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 10px; border-radius: 6px;
-    font-size: 11px; font-weight: 600;
-    background: var(--surface2); color: var(--text2);
-    border: 1px solid var(--border);
-  }
-
-  /* SUCCESS ANIMATION */
-  @keyframes checkPop { 0%{transform:scale(0);} 70%{transform:scale(1.2);} 100%{transform:scale(1);} }
-  .check-anim { animation: checkPop 0.4s ease; }
-
-  /* HAMBURGER */
-  .hamburger { display: flex; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
-  .hamburger span { display: block; width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: all 0.3s; }
+  /* ── HAMBURGER ───────────────────────────────────────────────── */
+  .hamburger { display:flex; flex-direction:column; gap:5px; cursor:pointer; padding:4px }
+  .hamburger span { display:block; width:20px; height:2px; background:var(--text2); border-radius:2px; transition:all .3s }
 </style>
 </head>
 <body>
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-// ─── MOCK DATA ───────────────────────────────────────────────
-const USERS_DATA = [
-  { id: 'USR001', name: 'Arjun Sharma',   email: 'arjun@example.com',   password: 'user123', role: 'customer', usage: 142.5, limit: 200, status: 'paid',    joined: 'Jan 2024', address: 'Chennai, TN' },
-  { id: 'USR002', name: 'Priya Nair',     email: 'priya@example.com',   password: 'user456', role: 'customer', usage: 188.2, limit: 200, status: 'pending', joined: 'Feb 2024', address: 'Coimbatore, TN' },
-  { id: 'USR003', name: 'Vikram Patel',   email: 'vikram@example.com',  password: 'user789', role: 'customer', usage: 210.1, limit: 200, status: 'overdue', joined: 'Mar 2024', address: 'Bangalore, KA' },
-  { id: 'USR004', name: 'Meena Reddy',    email: 'meena@example.com',   password: 'user000', role: 'customer', usage: 98.7,  limit: 200, status: 'paid',    joined: 'Nov 2023', address: 'Hyderabad, TS' },
-  { id: 'USR005', name: 'Sanjay Kumar',   email: 'sanjay@example.com',  password: 'user111', role: 'customer', usage: 165.3, limit: 200, status: 'pending', joined: 'Apr 2024', address: 'Mumbai, MH' },
-];
-const ADMIN_DATA = { email: 'admin@gaspulse.com', password: 'admin123', name: 'Admin Console', role: 'admin' };
-const PRICE_PER_UNIT = 18.5; // ₹ per unit
+/* ═══════════════════════════════════════════════════════════════
+   CONSTANTS & HELPERS
+═══════════════════════════════════════════════════════════════ */
+const PULSE_TO_M3 = 10; // 1 pulse = 10 m³ (as specified)
 
-const DAILY_USAGE = [
-  { day: 'Mon', usage: 18.2 }, { day: 'Tue', usage: 22.5 }, { day: 'Wed', usage: 15.8 },
-  { day: 'Thu', usage: 24.1 }, { day: 'Fri', usage: 19.7 }, { day: 'Sat', usage: 28.3 },
-  { day: 'Sun', usage: 14.0 },
+// Fixed credential sets — no payment data
+const USERS_DB = [
+  { id:'USR001', name:'Arjun Sharma',  email:'arjun@example.com',  password:'user123', role:'customer', topic:'gas/user1/usage' },
+  { id:'USR002', name:'Priya Nair',    email:'priya@example.com',  password:'user456', role:'customer', topic:'gas/user2/usage' },
+  { id:'USR003', name:'Vikram Patel',  email:'vikram@example.com', password:'user789', role:'customer', topic:'gas/user3/usage' },
 ];
-const MONTHLY_USAGE = [
-  { month: 'Aug', usage: 120, revenue: 2220 }, { month: 'Sep', usage: 135, revenue: 2497 },
-  { month: 'Oct', usage: 118, revenue: 2183 }, { month: 'Nov', usage: 155, revenue: 2867 },
-  { month: 'Dec', usage: 168, revenue: 3108 }, { month: 'Jan', usage: 142, revenue: 2627 },
-  { month: 'Feb', usage: 160, revenue: 2960 }, { month: 'Mar', usage: 175, revenue: 3237 },
-];
+const ADMIN_DB = { email:'admin@gaspulse.com', password:'admin123', name:'Admin Console', role:'admin' };
 
-const HISTORY = [
-  { date: 'Mar 23', units: 14.0, cost: 259.0,  status: 'paid' },
-  { date: 'Mar 22', units: 28.3, cost: 523.5,  status: 'paid' },
-  { date: 'Mar 21', units: 19.7, cost: 364.4,  status: 'paid' },
-  { date: 'Mar 20', units: 24.1, cost: 445.8,  status: 'pending' },
-  { date: 'Mar 19', units: 15.8, cost: 292.3,  status: 'paid' },
-  { date: 'Mar 18', units: 22.5, cost: 416.2,  status: 'paid' },
-];
+// Default MQTT config pre-filled from image
+const DEFAULT_MQTT = {
+  broker:   'tdf182ef.ala.asia-southeast1.emqxsl.com',
+  port:     '8084',
+  username: '',
+  password: '',
+  topic:    'gas/user1/usage',
+};
 
-const NOTIFICATIONS = [
-  { id: 1, icon: '⚠️', title: 'High Usage Alert', msg: 'Your usage exceeded 90% of limit', time: '2h ago', bg: 'var(--orange-glow)', color: 'var(--orange)' },
-  { id: 2, icon: '💳', title: 'Bill Generated', msg: '₹2,636.25 due by Apr 01', time: '1d ago', bg: 'var(--blue-glow)', color: 'var(--blue)' },
-  { id: 3, icon: '✅', title: 'Payment Confirmed', msg: 'March payment received', time: '3d ago', bg: 'var(--green-glow)', color: 'var(--green)' },
-];
+function fmtTime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+function fmtDateTime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString('en-IN', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+function toM3(pulse) { return parseFloat((pulse * PULSE_TO_M3).toFixed(2)); }
 
-// ─── CHART HOOK ──────────────────────────────────────────────
-function useChart(ref, config, deps) {
+/* ═══════════════════════════════════════════════════════════════
+   CHART HOOK
+═══════════════════════════════════════════════════════════════ */
+function useChart(ref, buildConfig, deps) {
   useEffect(() => {
     if (!ref.current) return;
     const ctx = ref.current.getContext('2d');
-    const chart = new Chart(ctx, config);
+    const chart = new Chart(ctx, buildConfig());
     return () => chart.destroy();
   }, deps);
 }
 
-// ─── COMPONENTS ──────────────────────────────────────────────
-function StatCard({ icon, label, value, change, changeDir, accentClass, glowClass, delay='' }) {
+/* ═══════════════════════════════════════════════════════════════
+   MQTT HOOK — core real-time engine
+═══════════════════════════════════════════════════════════════ */
+function useMQTT(config, enabled) {
+  const [status, setStatus]       = useState('disconnected'); // connecting | connected | disconnected
+  const [messages, setMessages]   = useState([]);             // {topic, pulse, m3, ts}
+  const [devices, setDevices]     = useState({});             // {topic: {pulse,m3,ts,active}}
+  const clientRef = useRef(null);
+
+  const connect = useCallback(() => {
+    if (clientRef.current) {
+      try { clientRef.current.end(true); } catch(_) {}
+    }
+    setStatus('connecting');
+    const url = `wss://${config.broker}:${config.port}/mqtt`;
+    const opts = {
+      clean: true,
+      reconnectPeriod: 5000,
+      connectTimeout: 10000,
+      clientId: 'gaspulse_' + Math.random().toString(16).slice(2, 8),
+    };
+    if (config.username) opts.username = config.username;
+    if (config.password) opts.password = config.password;
+
+    let client;
+    try {
+      client = mqtt.connect(url, opts);
+    } catch(e) {
+      setStatus('disconnected');
+      return;
+    }
+    clientRef.current = client;
+
+    client.on('connect', () => {
+      setStatus('connected');
+      // Subscribe to the configured topic AND wildcard for admin
+      const topics = [config.topic, 'gas/+/usage'];
+      topics.forEach(t => { try { client.subscribe(t); } catch(_) {} });
+    });
+
+    client.on('message', (topic, payload) => {
+      const raw = payload.toString().trim();
+      const pulse = parseFloat(raw);
+      if (isNaN(pulse)) return;
+      const m3 = toM3(pulse);
+      const ts = Date.now();
+
+      setMessages(prev => {
+        const entry = { topic, pulse, m3, ts };
+        const next = [entry, ...prev].slice(0, 200); // keep last 200
+        return next;
+      });
+      setDevices(prev => ({
+        ...prev,
+        [topic]: { pulse, m3, ts, active: true }
+      }));
+    });
+
+    client.on('error',        () => setStatus('disconnected'));
+    client.on('close',        () => setStatus('disconnected'));
+    client.on('offline',      () => setStatus('disconnected'));
+    client.on('reconnect',    () => setStatus('connecting'));
+  }, [config]);
+
+  const disconnect = useCallback(() => {
+    if (clientRef.current) {
+      try { clientRef.current.end(true); } catch(_) {}
+      clientRef.current = null;
+    }
+    setStatus('disconnected');
+  }, []);
+
+  useEffect(() => {
+    if (enabled) connect();
+    else disconnect();
+    return () => { if (clientRef.current) { try { clientRef.current.end(true); } catch(_) {} } };
+  }, [enabled, config.broker, config.port, config.username, config.password, config.topic]);
+
+  // Mark device as inactive after 30 s of silence
+  useEffect(() => {
+    const iv = setInterval(() => {
+      const now = Date.now();
+      setDevices(prev => {
+        const updated = { ...prev };
+        let changed = false;
+        Object.keys(updated).forEach(k => {
+          if (updated[k].active && now - updated[k].ts > 30000) {
+            updated[k] = { ...updated[k], active: false };
+            changed = true;
+          }
+        });
+        return changed ? updated : prev;
+      });
+    }, 5000);
+    return () => clearInterval(iv);
+  }, []);
+
+  return { status, messages, devices, connect, disconnect };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SMALL REUSABLE COMPONENTS
+═══════════════════════════════════════════════════════════════ */
+function StatCard({ icon, label, value, change, dir='neutral', accent='accent-green', glow='glow-green', delay='' }) {
   return (
     <div className={`stat-card fade-up ${delay}`}>
-      <div className={`stat-accent ${accentClass}`}>{icon}</div>
+      <div className={`stat-accent ${accent}`}>{icon}</div>
       <div className="stat-label">{label}</div>
       <div className="stat-value">{value}</div>
-      {change && <div className={`stat-change ${changeDir}`}>
-        {changeDir === 'up' ? '↑' : changeDir === 'down' ? '↓' : '•'} {change}
-      </div>}
-      <div className={`stat-glow-line ${glowClass}`}></div>
+      {change && <div className={`stat-change ${dir}`}>{dir==='up'?'↑':dir==='down'?'↓':'•'} {change}</div>}
+      <div className={`stat-glow-line ${glow}`}/>
     </div>
   );
 }
 
-function Badge({ status }) {
-  const map = { paid: 'badge-paid', pending: 'badge-pending', overdue: 'badge-overdue', high: 'badge-high', normal: 'badge-normal' };
-  const labels = { paid: 'Paid', pending: 'Pending', overdue: 'Overdue', high: 'High', normal: 'Normal' };
-  return <span className={`badge ${map[status] || 'badge-pending'}`}><span className="badge-dot"></span>{labels[status] || status}</span>;
+function ConnStatus({ status }) {
+  return (
+    <div className={`mqtt-pill ${status}`}>
+      <span className={`mqtt-dot ${status}`}/>
+      {status === 'connected'    && 'Connected'}
+      {status === 'disconnected' && 'Disconnected'}
+      {status === 'connecting'   && 'Connecting…'}
+    </div>
+  );
 }
 
-// ─── LOGIN PAGE ───────────────────────────────────────────────
+function DeviceBadge({ active }) {
+  if (active) return <span className="badge badge-online"><span className="badge-dot"/>Online</span>;
+  return <span className="badge badge-offline"><span className="badge-dot"/>Offline</span>;
+}
+
+function LiveBadge() {
+  return (
+    <span className="live-badge">
+      <span className="live-dot-wrap"><span className="live-dot"/><span className="live-ring"/></span>
+      LIVE
+    </span>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MQTT CONFIG MODAL
+═══════════════════════════════════════════════════════════════ */
+function MqttConfigModal({ cfg, onSave, onClose }) {
+  const [form, setForm] = useState({ ...cfg });
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal-card" style={{ position:'relative' }}>
+        <button className="modal-close" onClick={onClose}>×</button>
+        <div className="modal-title">🔌 MQTT Configuration</div>
+        <div className="modal-sub">Configure your EMQX broker connection</div>
+
+        <div className="form-group">
+          <label className="form-label">Broker Address</label>
+          <input className="form-input" placeholder="tdf182ef.ala.asia-southeast1.emqxsl.com" value={form.broker} onChange={e=>set('broker',e.target.value)}/>
+        </div>
+        <div className="form-group">
+          <label className="form-label">WebSocket Port</label>
+          <input className="form-input" placeholder="8084" value={form.port} onChange={e=>set('port',e.target.value)}/>
+        </div>
+        <div className="input-row">
+          <div className="form-group" style={{flex:1}}>
+            <label className="form-label">Username</label>
+            <input className="form-input" placeholder="(optional)" value={form.username} onChange={e=>set('username',e.target.value)}/>
+          </div>
+          <div className="form-group" style={{flex:1}}>
+            <label className="form-label">Password</label>
+            <input className="form-input" type="password" placeholder="(optional)" value={form.password} onChange={e=>set('password',e.target.value)}/>
+          </div>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Topic</label>
+          <input className="form-input" placeholder="gas/user1/usage" value={form.topic} onChange={e=>set('topic',e.target.value)}/>
+          <div style={{fontSize:11,color:'var(--text3)',marginTop:6}}>💡 Use <code style={{background:'var(--bg2)',padding:'1px 5px',borderRadius:4}}>gas/+/usage</code> to subscribe all devices</div>
+        </div>
+
+        <div style={{display:'flex',gap:10,marginTop:4}}>
+          <button className="btn btn-green btn-full" onClick={()=>onSave(form)}>⚡ Connect</button>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        </div>
+
+        <div style={{marginTop:16,padding:'12px',background:'var(--bg2)',borderRadius:10,fontSize:11,color:'var(--text2)',border:'1px solid var(--border)'}}>
+          <strong style={{color:'var(--text)'}}>From your EMQX broker info:</strong><br/>
+          Broker: tdf182ef.ala.asia-southeast1.emqxsl.com<br/>
+          WSS Port: 8084 (TLS) &nbsp;•&nbsp; MQTT Port: 8883 (TLS)
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════════════════════════════ */
 function LoginPage({ onLogin }) {
-  const [role, setRole] = useState('customer');
+  const [role, setRole]   = useState('customer');
   const [email, setEmail] = useState('');
-  const [pass, setPass] = useState('');
-  const [err, setErr] = useState('');
+  const [pass, setPass]   = useState('');
+  const [err, setErr]     = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const doLogin = () => {
     setErr(''); setLoading(true);
     setTimeout(() => {
       setLoading(false);
       if (role === 'admin') {
-        if (email === ADMIN_DATA.email && pass === ADMIN_DATA.password) { onLogin(ADMIN_DATA); return; }
+        if (email === ADMIN_DB.email && pass === ADMIN_DB.password) { onLogin(ADMIN_DB); return; }
         setErr('Invalid admin credentials.');
       } else {
-        const user = USERS_DATA.find(u => (u.email === email || u.name.toLowerCase() === email.toLowerCase()) && u.password === pass);
-        if (user) { onLogin(user); return; }
+        const u = USERS_DB.find(u => u.email === email && u.password === pass);
+        if (u) { onLogin(u); return; }
         setErr('Invalid email or password.');
       }
-    }, 800);
+    }, 700);
   };
 
   return (
     <div className="login-wrap">
       <div className="login-bg">
-        <div className="login-grid-bg"></div>
-        <div className="login-bg-orb orb1"></div>
-        <div className="login-bg-orb orb2"></div>
-        <div className="login-bg-orb orb3"></div>
+        <div className="login-grid"/>
+        <div className="login-orb orb1"/>
+        <div className="login-orb orb2"/>
+        <div className="login-orb orb3"/>
       </div>
       <div className="login-card">
         <div className="login-logo">
-          <div className="login-logo-icon">🔥</div>
+          <div className="login-logo-icon">⛽</div>
           <div>
             <div className="login-logo-text">GasPulse</div>
-            <div className="login-logo-sub">Smart Monitoring</div>
+            <div className="login-logo-sub">Smart Gas Monitoring</div>
           </div>
         </div>
         <div className="login-title">Welcome Back</div>
         <div className="login-sub">Sign in to your monitoring dashboard</div>
 
         <div className="role-tabs">
-          <button className={`role-tab ${role==='customer'?'active':''}`} onClick={()=>{setRole('customer');setErr('');}}>
-            👤 Customer
-          </button>
-          <button className={`role-tab ${role==='admin'?'active':''}`} onClick={()=>{setRole('admin');setErr('');}}>
-            🛠️ Admin
-          </button>
+          <button className={`role-tab ${role==='customer'?'active':''}`} onClick={()=>{setRole('customer');setErr('')}}>👤 Customer</button>
+          <button className={`role-tab ${role==='admin'?'active':''}`}    onClick={()=>{setRole('admin');setErr('')}}>🛠️ Admin</button>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Email / Username</label>
-          <input className="form-input" type="text" placeholder={role==='admin'?'admin@gaspulse.com':'your@email.com'}
-            value={email} onChange={e=>setEmail(e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&handleLogin()} />
+          <label className="form-label">Email</label>
+          <input className="form-input" type="email" placeholder={role==='admin'?'admin@gaspulse.com':'your@email.com'}
+            value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
         </div>
         <div className="form-group">
           <label className="form-label">Password</label>
           <input className="form-input" type="password" placeholder="••••••••"
-            value={pass} onChange={e=>setPass(e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&handleLogin()} />
+            value={pass} onChange={e=>setPass(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doLogin()}/>
         </div>
 
-        {err && <div style={{color:'var(--red)',fontSize:'13px',marginBottom:'14px',padding:'10px 14px',background:'rgba(242,95,92,0.1)',borderRadius:'8px',border:'1px solid rgba(242,95,92,0.3)'}}>{err}</div>}
+        {err && <div style={{color:'var(--red)',fontSize:13,marginBottom:14,padding:'10px 14px',background:'rgba(242,95,92,.1)',borderRadius:8,border:'1px solid rgba(242,95,92,.3)'}}>{err}</div>}
 
-        <button className="btn-primary" onClick={handleLogin} disabled={loading}>
-          {loading ? <span style={{display:'inline-block',width:16,height:16,border:'2px solid rgba(255,255,255,0.4)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}></span> : '→ Sign In'}
+        <button className="btn-primary" onClick={doLogin} disabled={loading}>
+          {loading ? <span className="spinner"/> : '→ Sign In'}
         </button>
 
-        <div className="login-hint" style={{marginTop:20}}>
-          <div style={{marginBottom:6,fontWeight:700,fontSize:11,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text2)'}}>Demo Credentials</div>
-          {role==='admin' ? <>
-            <div>👤 <strong>admin@gaspulse.com</strong></div>
-            <div>🔑 <strong>admin123</strong></div>
-          </> : <>
-            <div>👤 <strong>arjun@example.com</strong> &nbsp;🔑 <strong>user123</strong></div>
-            <div style={{marginTop:4}}>👤 <strong>priya@example.com</strong> &nbsp;🔑 <strong>user456</strong></div>
-          </>}
+        <div className="login-hint" style={{marginTop:18}}>
+          <div style={{fontWeight:700,fontSize:10,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--text2)',marginBottom:6}}>Demo Credentials</div>
+          {role === 'admin'
+            ? <div>👤 <strong>admin@gaspulse.com</strong> &nbsp;🔑 <strong>admin123</strong></div>
+            : <>
+                <div>👤 <strong>arjun@example.com</strong> &nbsp;🔑 <strong>user123</strong></div>
+                <div style={{marginTop:4}}>👤 <strong>priya@example.com</strong> &nbsp;🔑 <strong>user456</strong></div>
+              </>
+          }
         </div>
       </div>
     </div>
   );
 }
 
-// ─── SIDEBAR ──────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════════════ */
 function Sidebar({ user, page, setPage, collapsed, mobileOpen, setMobileOpen, onLogout }) {
-  const customerNav = [
-    { id: 'dashboard', icon: '📊', label: 'Dashboard' },
-    { id: 'usage',     icon: '🔥', label: 'Usage' },
-    { id: 'payments',  icon: '💳', label: 'Payments', badge: user?.status==='pending'?'1':null },
+  const custNav = [
+    { id:'dashboard',  icon:'📊', label:'Dashboard' },
+    { id:'usage',      icon:'⛽', label:'Gas Usage' },
   ];
   const adminNav = [
-    { id: 'admin-overview', icon: '📊', label: 'Overview' },
-    { id: 'admin-users',    icon: '👥', label: 'Users' },
-    { id: 'admin-revenue',  icon: '💰', label: 'Revenue' },
-    { id: 'admin-settings', icon: '⚙️', label: 'Settings' },
+    { id:'admin-overview', icon:'📊', label:'Overview' },
+    { id:'admin-devices',  icon:'📡', label:'Devices' },
   ];
-  const nav = user?.role === 'admin' ? adminNav : customerNav;
+  const nav = user?.role === 'admin' ? adminNav : custNav;
+
+  const handleNav = (id) => {
+    setPage(id);
+    if (window.innerWidth <= 768) setMobileOpen(false);
+  };
 
   return (
     <>
-      {mobileOpen && <div className="mobile-overlay show" onClick={()=>setMobileOpen(false)}></div>}
-      <aside className={`sidebar ${collapsed?'collapsed':''} ${!mobileOpen&&window.innerWidth<=768?'mobile-hidden':''}`}>
+      {mobileOpen && <div className="mob-overlay show" onClick={()=>setMobileOpen(false)}/>}
+      <aside className={`sidebar ${collapsed?'collapsed':''} ${!mobileOpen&&window.innerWidth<=768?'mob-hidden':''}${mobileOpen&&window.innerWidth<=768?' mob-open':''}`}>
         <div className="sidebar-header">
-          <div className="sidebar-logo-icon">🔥</div>
+          <div className="sidebar-logo-icon">⛽</div>
           {!collapsed && <div>
             <div className="sidebar-logo-text">GasPulse</div>
             <div className="sidebar-logo-sub">Smart Monitor</div>
           </div>}
         </div>
 
-        <div style={{flex:1,padding:'8px 0'}}>
-          <div className="sidebar-section-title">{user?.role==='admin'?'Admin Panel':'My Account'}</div>
+        <div style={{flex:1,padding:'6px 0'}}>
+          <div className="sidebar-section">{user?.role==='admin'?'Admin Panel':'My Account'}</div>
           {nav.map(item => (
-            <button key={item.id} className={`nav-item ${page===item.id?'active':''}`} onClick={()=>{setPage(item.id);if(window.innerWidth<=768)setMobileOpen(false);}}>
+            <button key={item.id} className={`nav-item ${page===item.id?'active':''}`} onClick={()=>handleNav(item.id)}>
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
-              {item.badge && <span className="nav-badge">{item.badge}</span>}
             </button>
           ))}
         </div>
@@ -853,7 +780,7 @@ function Sidebar({ user, page, setPage, collapsed, mobileOpen, setMobileOpen, on
             <div className="user-avatar">{(user?.name||'?')[0]}</div>
             <div className="user-info">
               <div className="user-name">{user?.name}</div>
-              <div className="user-role">{user?.role}</div>
+              <div className="user-role-label">{user?.role}</div>
             </div>
           </div>}
           <button className="nav-item" style={{marginTop:8}} onClick={onLogout}>
@@ -866,29 +793,23 @@ function Sidebar({ user, page, setPage, collapsed, mobileOpen, setMobileOpen, on
   );
 }
 
-// ─── TOPBAR ───────────────────────────────────────────────────
-function Topbar({ user, page, collapsed, setCollapsed, setMobileOpen, dark, setDark, notifOpen, setNotifOpen }) {
+/* ═══════════════════════════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════════════════════════ */
+function Topbar({ user, page, collapsed, setCollapsed, setMobileOpen, dark, setDark, mqttStatus, onOpenConfig }) {
   const titles = {
-    dashboard: { t: 'Dashboard', s: 'Monitor your gas usage in real time' },
-    usage: { t: 'Usage Analytics', s: 'Detailed consumption breakdown' },
-    payments: { t: 'Payments', s: 'Bills and payment history' },
-    'admin-overview': { t: 'Admin Overview', s: 'System-wide statistics' },
-    'admin-users': { t: 'User Management', s: 'Manage all customers' },
-    'admin-revenue': { t: 'Revenue Analytics', s: 'Financial performance' },
-    'admin-settings': { t: 'Settings', s: 'System configuration' },
+    'dashboard':       { t:'Dashboard',        s:'Real-time gas usage monitor' },
+    'usage':           { t:'Gas Usage',         s:'Usage history & trends' },
+    'admin-overview':  { t:'Admin Overview',    s:'System-wide gas monitoring' },
+    'admin-devices':   { t:'Device Monitor',    s:'All connected ESP devices' },
   };
-  const info = titles[page] || { t: page, s: '' };
+  const info = titles[page] || { t: page, s:'' };
 
   return (
     <div className="topbar">
       <div className="topbar-left">
-        <div className="icon-btn" onClick={()=>{
-          if(window.innerWidth<=768) setMobileOpen(v=>!v);
-          else setCollapsed(v=>!v);
-        }}>
-          <div className="hamburger">
-            <span></span><span></span><span></span>
-          </div>
+        <div className="icon-btn" onClick={()=>{ if(window.innerWidth<=768) setMobileOpen(v=>!v); else setCollapsed(v=>!v); }}>
+          <div className="hamburger"><span/><span/><span/></div>
         </div>
         <div>
           <div className="page-title">{info.t}</div>
@@ -896,16 +817,12 @@ function Topbar({ user, page, collapsed, setCollapsed, setMobileOpen, dark, setD
         </div>
       </div>
       <div className="topbar-right">
-        <div className="icon-btn theme-btn" title="Toggle theme" onClick={()=>setDark(v=>!v)}>
-          {dark?'☀️':'🌙'}
-        </div>
-        <div className="icon-btn notif-btn" onClick={()=>setNotifOpen(v=>!v)}>
-          🔔
-          <div className="notif-dot"></div>
-        </div>
+        <ConnStatus status={mqttStatus}/>
+        <button className="btn btn-ghost btn-sm" onClick={onOpenConfig} title="MQTT Settings">⚙️ MQTT</button>
+        <div className="icon-btn" onClick={()=>setDark(v=>!v)} title="Toggle theme">{dark?'☀️':'🌙'}</div>
         <div className="profile-badge">
           <div className="profile-avatar">{(user?.name||'?')[0]}</div>
-          <div className="user-info">
+          <div>
             <div className="profile-name">{user?.name?.split(' ')[0]}</div>
             <div className="profile-role">{user?.role}</div>
           </div>
@@ -915,683 +832,498 @@ function Topbar({ user, page, collapsed, setCollapsed, setMobileOpen, dark, setD
   );
 }
 
-// ─── CUSTOMER DASHBOARD ───────────────────────────────────────
-function CustomerDashboard({ user }) {
-  const chartRef = useRef();
-  const u = user;
-  const totalCost = (u.usage * PRICE_PER_UNIT).toFixed(2);
-  const usagePct = Math.min((u.usage / u.limit) * 100, 100);
+/* ═══════════════════════════════════════════════════════════════
+   LIVE USAGE CHART COMPONENT (updates with new data)
+═══════════════════════════════════════════════════════════════ */
+function LiveChart({ messages, topic }) {
+  const canvasRef = useRef();
+  const chartRef  = useRef(null);
 
-  useChart(chartRef, {
-    type: 'line',
-    data: {
-      labels: DAILY_USAGE.map(d=>d.day),
-      datasets: [{
-        label: 'Gas Usage (units)',
-        data: DAILY_USAGE.map(d=>d.usage),
-        borderColor: '#22d07a',
-        backgroundColor: 'rgba(34,208,122,0.08)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#22d07a',
-        pointBorderColor: '#0f1629',
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        tension: 0.45,
-        fill: true,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } },
-        y: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } }
+  // Derive last-20 data points for this topic
+  const points = useMemo(() => {
+    const filtered = messages.filter(m => m.topic === topic || !topic);
+    return filtered.slice(0, 20).reverse();
+  }, [messages, topic]);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+
+    if (chartRef.current) { chartRef.current.destroy(); }
+
+    chartRef.current = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: points.map(p => fmtTime(p.ts)),
+        datasets: [{
+          label: 'Gas Usage (m³)',
+          data:   points.map(p => p.m3),
+          borderColor: '#22d07a',
+          backgroundColor: 'rgba(34,208,122,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: '#22d07a',
+          pointBorderColor: 'var(--bg)',
+          pointBorderWidth: 2,
+          pointRadius: 5,
+          tension: 0.4,
+          fill: true,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        animation: { duration: 400 },
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color:'rgba(99,179,237,0.07)' }, ticks: { color:'#8fa3c8', maxTicksLimit:8, font:{size:10} } },
+          y: { grid: { color:'rgba(99,179,237,0.07)' }, ticks: { color:'#8fa3c8', font:{size:10} }, beginAtZero:true }
+        }
       }
-    }
-  }, []);
+    });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [points]);
+
+  if (points.length === 0) {
+    return (
+      <div className="empty-state" style={{padding:32}}>
+        <div className="empty-icon">📭</div>
+        <div className="empty-text">No Data Yet</div>
+        <div className="empty-sub">Waiting for MQTT messages…</div>
+      </div>
+    );
+  }
+
+  return <div className="chart-wrap"><canvas ref={canvasRef}/></div>;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOMER DASHBOARD
+═══════════════════════════════════════════════════════════════ */
+function CustomerDashboard({ user, mqttData }) {
+  const { status, messages, devices } = mqttData;
+
+  // Only messages for this user's topic
+  const myTopic    = user.topic || 'gas/user1/usage';
+  const myMessages = messages.filter(m => m.topic === myTopic);
+  const latest     = myMessages[0];
+
+  const currentM3  = latest ? latest.m3   : null;
+  const lastPulse  = latest ? latest.pulse : null;
+  const lastSeen   = latest ? latest.ts    : null;
+
+  // Session total = sum of unique readings (use simple accumulation)
+  const sessionTotal = useMemo(() => {
+    if (myMessages.length === 0) return 0;
+    return myMessages.reduce((acc, m) => acc + m.m3, 0);
+  }, [myMessages.length]);
+
+  const isOnline = devices[myTopic]?.active ?? false;
+  const hasData  = !!latest;
 
   return (
     <div className="page">
-      {u.usage > u.limit * 0.9 && (
-        <div className="alert-banner alert-warning fade-up">
+      {/* Connection alerts */}
+      {status === 'disconnected' && (
+        <div className="alert alert-warn fade-up">
           <span className="alert-icon">⚠️</span>
-          <div className="alert-text">
-            <div className="alert-title">High Usage Alert</div>
-            <div className="alert-sub">You've used {usagePct.toFixed(0)}% of your monthly limit. Consider reducing consumption.</div>
+          <div>
+            <div className="alert-title">MQTT Disconnected</div>
+            <div className="alert-msg">Click ⚙️ MQTT in the top-bar to configure and connect.</div>
+          </div>
+        </div>
+      )}
+      {status === 'connected' && !hasData && (
+        <div className="alert alert-info fade-up">
+          <span className="alert-icon">📡</span>
+          <div>
+            <div className="alert-title">Connected — Waiting for data</div>
+            <div className="alert-msg">Subscribed to <code style={{background:'var(--bg2)',padding:'0 4px',borderRadius:4}}>{myTopic}</code>. Waiting for ESP to send pulses…</div>
           </div>
         </div>
       )}
 
+      {/* Stat cards */}
       <div className="stats-grid">
-        <StatCard icon="🔥" label="Gas Used" value={`${u.usage} u`} change="This month" changeDir="neutral" accentClass="accent-green" glowClass="glow-green" delay="fade-up-1"/>
-        <StatCard icon="💰" label="Amount Due" value={`₹${totalCost}`} change={`@ ₹${PRICE_PER_UNIT}/unit`} changeDir="neutral" accentClass="accent-orange" glowClass="glow-orange" delay="fade-up-2"/>
-        <StatCard icon="📏" label="Monthly Limit" value={`${u.limit} u`} change="Reset in 8 days" changeDir="neutral" accentClass="accent-blue" glowClass="glow-blue" delay="fade-up-3"/>
-        <StatCard icon="📋" label="Status" value={u.status==='paid'?'Clear':'Due'} change={u.status==='paid'?'All paid up':'Payment needed'} changeDir={u.status==='paid'?'up':'down'} accentClass={u.status==='paid'?'accent-green':'accent-orange'} glowClass={u.status==='paid'?'glow-green':'glow-orange'} delay="fade-up-4"/>
+        <StatCard icon="⛽" label="Current Reading" value={hasData ? `${currentM3} m³` : '—'} change={hasData?`Pulse: ${lastPulse}`:'No data received'} dir={hasData?'up':'neutral'} accent="accent-green" glow="glow-green" delay="fade-up-1"/>
+        <StatCard icon="📈" label="Session Total"   value={hasData ? `${sessionTotal.toFixed(2)} m³` : '—'} change={`${myMessages.length} readings`} dir="neutral" accent="accent-blue"   glow="glow-blue"   delay="fade-up-2"/>
+        <StatCard icon="📡" label="Device Status"   value={isOnline ? 'Online' : (hasData ? 'Idle' : 'No Data')} change={hasData?`Last: ${fmtTime(lastSeen)}`:'Awaiting signal'} dir={isOnline?'up':'neutral'} accent={isOnline?'accent-green':'accent-orange'} glow={isOnline?'glow-green':'glow-orange'} delay="fade-up-3"/>
+        <StatCard icon="🔗" label="Connection"      value={status==='connected'?'Live':status==='connecting'?'Connecting':'Offline'} change={`Topic: ${myTopic.split('/').slice(-2).join('/')}`} dir={status==='connected'?'up':status==='connecting'?'neutral':'down'} accent={status==='connected'?'accent-green':'accent-orange'} glow={status==='connected'?'glow-green':'glow-orange'} delay="fade-up-4"/>
       </div>
 
+      {/* Main content */}
       <div className="grid-3">
+        {/* Live chart */}
         <div className="card fade-up fade-up-2">
           <div className="card-header">
-            <div><div className="card-title">Weekly Usage</div><div className="card-sub">Units consumed per day</div></div>
-            <select className="custom-select"><option>This Week</option><option>Last Week</option></select>
+            <div>
+              <div className="card-title">Live Usage Trend</div>
+              <div className="card-sub">Gas consumption in m³ (last 20 readings)</div>
+            </div>
+            {hasData && <LiveBadge/>}
           </div>
-          <div className="chart-container">
-            <canvas ref={chartRef}></canvas>
-          </div>
+          <LiveChart messages={messages} topic={myTopic}/>
         </div>
 
-        <div style={{display:'flex',flexDirection:'column',gap:20}}>
+        {/* Right column */}
+        <div style={{display:'flex',flexDirection:'column',gap:18}}>
+          {/* Big number */}
           <div className="card fade-up fade-up-3">
-            <div className="card-title" style={{marginBottom:16}}>Usage Meter</div>
-            <div className="meter-wrap">
-              <div className="meter-label">
-                <span>{u.usage} used</span>
-                <span style={{color:usagePct>90?'var(--red)':usagePct>70?'var(--orange)':'var(--green)'}}>{usagePct.toFixed(1)}%</span>
+            <div className="card-header">
+              <div className="card-title">Current Reading</div>
+              {hasData && <LiveBadge/>}
+            </div>
+            <div className="gas-hero" style={{padding:'20px 0'}}>
+              <div className={`gas-num ${hasData?'live':'nodata'}`}>
+                {hasData ? currentM3 : '—'}
               </div>
-              <div className="meter-bar">
-                <div className={`meter-fill ${usagePct>90?'danger':usagePct>70?'warning':''}`} style={{width:`${usagePct}%`}}></div>
-              </div>
-              <div className="meter-label" style={{marginTop:6}}>
-                <span style={{color:'var(--text3)'}}>Limit: {u.limit} units</span>
-                <span style={{color:'var(--text3)'}}>{u.limit - u.usage > 0 ? `${(u.limit-u.usage).toFixed(1)} remaining` : 'Over limit'}</span>
-              </div>
+              <div className="gas-unit">m³</div>
+              {lastPulse !== null && <div className="gas-ts">Pulse count: <span className="pulse-badge">{lastPulse}</span></div>}
+              <div className="gas-ts" style={{marginTop:6}}>Last update: {fmtTime(lastSeen)}</div>
             </div>
           </div>
-          <div className="card fade-up fade-up-4" style={{flex:1}}>
-            <div className="card-title" style={{marginBottom:12}}>Quick Summary</div>
+
+          {/* Connection info card */}
+          <div className="card fade-up fade-up-4">
+            <div className="card-title" style={{marginBottom:14}}>Device Info</div>
             {[
-              {l:'Price/Unit', v:`₹${PRICE_PER_UNIT}`},
-              {l:'Total Bill', v:`₹${totalCost}`, bold:true},
-              {l:'Payment', v:<Badge status={u.status}/> },
-            ].map((r,i)=>(
-              <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 0',borderBottom:i<2?'1px solid var(--border)':'none'}}>
-                <span style={{color:'var(--text2)',fontSize:13}}>{r.l}</span>
-                {r.bold ? <strong style={{fontFamily:'var(--font-head)',fontSize:16}}>{r.v}</strong> : <span>{r.v}</span>}
+              { l:'Topic',  v: myTopic },
+              { l:'Device', v: user.id },
+              { l:'Status', v: isOnline?'🟢 Online':'⚫ Offline' },
+              { l:'Readings', v: `${myMessages.length} total` },
+            ].map((r,i) => (
+              <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:i<3?'1px solid var(--border)':'none',fontSize:13}}>
+                <span style={{color:'var(--text2)'}}>{r.l}</span>
+                <span style={{fontWeight:500,maxWidth:'55%',textAlign:'right',wordBreak:'break-all'}}>{r.v}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="card fade-up fade-up-3">
+      {/* Recent readings log */}
+      <div className="card fade-up fade-up-5">
         <div className="card-header">
-          <div><div className="card-title">Recent Usage History</div><div className="card-sub">Last 6 days</div></div>
+          <div><div className="card-title">Recent Readings</div><div className="card-sub">Last 50 MQTT messages</div></div>
+          {hasData && <span style={{fontSize:12,color:'var(--text3)'}}>{myMessages.length} total</span>}
         </div>
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>Date</th><th>Units Used</th><th>Cost</th><th>Status</th></tr></thead>
-            <tbody>
-              {HISTORY.map((h,i)=>(
-                <tr key={i}>
-                  <td><strong>{h.date}</strong></td>
-                  <td>{h.units.toFixed(1)} units</td>
-                  <td>₹{h.cost.toFixed(1)}</td>
-                  <td><Badge status={h.status}/></td>
-                </tr>
+        {myMessages.length === 0
+          ? <div className="empty-state" style={{padding:28}}>
+              <div className="empty-icon">📭</div>
+              <div className="empty-text">No Data Received</div>
+              <div className="empty-sub">Ensure your ESP is running and MQTT is connected</div>
+            </div>
+          : <div className="log-scroll">
+              {myMessages.slice(0,50).map((m,i) => (
+                <div key={i} className="log-row">
+                  <div className="log-icon">⛽</div>
+                  <div className="log-body">
+                    <div className="log-title">{m.m3} m³</div>
+                    <div className="log-time">{fmtDateTime(m.ts)} &nbsp;•&nbsp; Pulse: {m.pulse}</div>
+                  </div>
+                  <div className="log-val">{m.m3} m³</div>
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </div>
+        }
       </div>
     </div>
   );
 }
 
-// ─── USAGE PAGE ───────────────────────────────────────────────
-function UsagePage({ user }) {
-  const barRef = useRef();
-  const lineRef = useRef();
+/* ═══════════════════════════════════════════════════════════════
+   CUSTOMER USAGE PAGE
+═══════════════════════════════════════════════════════════════ */
+function UsagePage({ user, mqttData }) {
+  const { messages } = mqttData;
+  const myTopic = user.topic || 'gas/user1/usage';
+  const myMsgs  = messages.filter(m => m.topic === myTopic);
+  const canvasRef = useRef();
 
-  useChart(barRef, {
-    type: 'bar',
-    data: {
-      labels: DAILY_USAGE.map(d=>d.day),
-      datasets: [{
-        label: 'Usage',
-        data: DAILY_USAGE.map(d=>d.usage),
-        backgroundColor: DAILY_USAGE.map(d => d.usage > 25 ? 'rgba(249,115,22,0.7)' : 'rgba(79,163,247,0.7)'),
-        borderColor: DAILY_USAGE.map(d => d.usage > 25 ? '#f97316' : '#4fa3f7'),
-        borderWidth: 1.5, borderRadius: 8,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#8fa3c8' } },
-        y: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } }
+  // Build hourly buckets from session data
+  const hourlyData = useMemo(() => {
+    const buckets = {};
+    myMsgs.forEach(m => {
+      const h = new Date(m.ts).getHours();
+      const key = `${h}:00`;
+      buckets[key] = (buckets[key] || 0) + m.m3;
+    });
+    return Object.entries(buckets).map(([h,v])=>({ hour:h, m3:parseFloat(v.toFixed(2)) })).slice(-12);
+  }, [myMsgs.length]);
+
+  useEffect(() => {
+    if (!canvasRef.current || hourlyData.length === 0) return;
+    const ctx = canvasRef.current.getContext('2d');
+    const ch = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: hourlyData.map(d=>d.hour),
+        datasets:[{
+          label:'m³ per hour',
+          data: hourlyData.map(d=>d.m3),
+          backgroundColor: hourlyData.map(d=>d.m3>50?'rgba(249,115,22,.7)':'rgba(79,163,247,.7)'),
+          borderColor:     hourlyData.map(d=>d.m3>50?'#f97316':'#4fa3f7'),
+          borderWidth:1.5, borderRadius:7,
+        }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:'#8fa3c8',font:{size:10}}},
+          y:{grid:{color:'rgba(99,179,237,0.07)'},ticks:{color:'#8fa3c8',font:{size:10}},beginAtZero:true}
+        }
       }
-    }
-  }, []);
+    });
+    return () => ch.destroy();
+  }, [hourlyData]);
 
-  useChart(lineRef, {
-    type: 'line',
-    data: {
-      labels: MONTHLY_USAGE.map(m=>m.month),
-      datasets: [{
-        label: 'Monthly Usage',
-        data: MONTHLY_USAGE.map(m=>m.usage),
-        borderColor: '#22d07a',
-        backgroundColor: 'rgba(34,208,122,0.06)',
-        borderWidth: 2.5,
-        pointBackgroundColor: '#22d07a',
-        tension: 0.4, fill: true,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } },
-        y: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } }
-      }
-    }
-  }, []);
-
-  const avg = (DAILY_USAGE.reduce((a,d)=>a+d.usage,0)/DAILY_USAGE.length).toFixed(1);
-  const max = Math.max(...DAILY_USAGE.map(d=>d.usage));
-  const maxDay = DAILY_USAGE.find(d=>d.usage===max)?.day;
+  const totalM3 = myMsgs.reduce((a,m)=>a+m.m3,0).toFixed(2);
+  const avgM3   = myMsgs.length ? (myMsgs.reduce((a,m)=>a+m.m3,0)/myMsgs.length).toFixed(2) : 0;
+  const maxM3   = myMsgs.length ? Math.max(...myMsgs.map(m=>m.m3)).toFixed(2) : 0;
 
   return (
     <div className="page">
       <div className="stats-grid">
-        <StatCard icon="📈" label="Daily Avg" value={`${avg} u`} change="This week" changeDir="neutral" accentClass="accent-blue" glowClass="glow-blue" delay="fade-up-1"/>
-        <StatCard icon="⚡" label="Peak Day" value={maxDay} change={`${max} units`} changeDir="down" accentClass="accent-orange" glowClass="glow-orange" delay="fade-up-2"/>
-        <StatCard icon="📅" label="Monthly Total" value={`${user.usage} u`} change="vs 135 last month" changeDir="up" accentClass="accent-green" glowClass="glow-green" delay="fade-up-3"/>
-        <StatCard icon="💡" label="Efficiency" value="87%" change="Above average" changeDir="up" accentClass="accent-green" glowClass="glow-green" delay="fade-up-4"/>
+        <StatCard icon="📦" label="Session Total" value={`${totalM3} m³`} change={`${myMsgs.length} msgs`} dir="neutral" accent="accent-green" glow="glow-green" delay="fade-up-1"/>
+        <StatCard icon="📊" label="Avg per Reading" value={`${avgM3} m³`} change="This session" dir="neutral" accent="accent-blue" glow="glow-blue" delay="fade-up-2"/>
+        <StatCard icon="⚡" label="Peak Reading"   value={`${maxM3} m³`} change="Highest spike" dir="down" accent="accent-orange" glow="glow-orange" delay="fade-up-3"/>
+        <StatCard icon="📨" label="Messages"       value={myMsgs.length} change={`Topic: ${myTopic}`} dir="neutral" accent="accent-blue" glow="glow-blue" delay="fade-up-4"/>
+      </div>
+
+      <div className="card fade-up fade-up-2" style={{marginBottom:20}}>
+        <div className="card-header">
+          <div><div className="card-title">Hourly Usage (m³)</div><div className="card-sub">Orange bars = high usage hours</div></div>
+        </div>
+        {hourlyData.length === 0
+          ? <div className="empty-state" style={{padding:32}}><div className="empty-icon">📭</div><div className="empty-text">No Data Yet</div><div className="empty-sub">Connect MQTT and wait for readings</div></div>
+          : <div className="chart-wrap"><canvas ref={canvasRef}/></div>
+        }
+      </div>
+
+      <div className="card fade-up fade-up-3">
+        <div className="card-header">
+          <div><div className="card-title">Usage History</div><div className="card-sub">All received readings this session</div></div>
+        </div>
+        {myMsgs.length === 0
+          ? <div className="empty-state" style={{padding:28}}><div className="empty-icon">📭</div><div className="empty-text">No Data</div><div className="empty-sub">No readings received yet</div></div>
+          : <>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>#</th><th>Time</th><th>Pulse Count</th><th>Gas Usage (m³)</th></tr></thead>
+                  <tbody>
+                    {myMsgs.slice(0,100).map((m,i)=>(
+                      <tr key={i}>
+                        <td style={{color:'var(--text3)',fontSize:11}}>{myMsgs.length-i}</td>
+                        <td>{fmtDateTime(m.ts)}</td>
+                        <td><span className="pulse-badge">{m.pulse}</span></td>
+                        <td><strong style={{color:'var(--green)'}}>{m.m3} m³</strong></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {myMsgs.length > 100 && <div style={{textAlign:'center',padding:'14px',fontSize:12,color:'var(--text3)'}}>Showing 100 of {myMsgs.length} readings</div>}
+            </>
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN OVERVIEW
+═══════════════════════════════════════════════════════════════ */
+function AdminOverview({ mqttData }) {
+  const { status, messages, devices } = mqttData;
+  const canvasRef = useRef();
+
+  const activeDevices   = Object.values(devices).filter(d=>d.active);
+  const totalDevices    = Object.keys(devices).length;
+  const totalM3         = Object.values(devices).reduce((a,d)=>a+d.m3,0).toFixed(2);
+  const totalMessages   = messages.length;
+
+  // Per-topic totals for chart
+  const topicTotals = useMemo(() => {
+    const acc = {};
+    messages.forEach(m => { acc[m.topic] = (acc[m.topic]||0) + m.m3; });
+    return Object.entries(acc).map(([t,v])=>({ label:t.split('/').slice(0,-1).join('/'), m3:parseFloat(v.toFixed(2)) }));
+  }, [messages.length]);
+
+  useEffect(() => {
+    if (!canvasRef.current || topicTotals.length === 0) return;
+    const ctx = canvasRef.current.getContext('2d');
+    const colors = ['rgba(34,208,122,.7)','rgba(79,163,247,.7)','rgba(249,115,22,.7)','rgba(242,95,92,.7)','rgba(168,85,247,.7)'];
+    const ch = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels: topicTotals.map(d=>d.label),
+        datasets:[{ label:'Total m³', data:topicTotals.map(d=>d.m3), backgroundColor:colors, borderWidth:0, borderRadius:8 }]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:'#8fa3c8',font:{size:10}}},
+          y:{grid:{color:'rgba(99,179,237,0.07)'},ticks:{color:'#8fa3c8',font:{size:10}},beginAtZero:true}
+        }
+      }
+    });
+    return () => ch.destroy();
+  }, [topicTotals]);
+
+  return (
+    <div className="page">
+      {status === 'disconnected' && (
+        <div className="alert alert-warn fade-up">
+          <span className="alert-icon">⚠️</span>
+          <div><div className="alert-title">MQTT Not Connected</div><div className="alert-msg">Click ⚙️ MQTT in the top bar to configure your broker.</div></div>
+        </div>
+      )}
+
+      <div className="stats-grid">
+        <StatCard icon="📡" label="Active Devices"  value={activeDevices.length} change={`${totalDevices} seen this session`} dir="up" accent="accent-blue"   glow="glow-blue"   delay="fade-up-1"/>
+        <StatCard icon="⛽" label="Total Gas (m³)"  value={totalM3} change="All devices combined"  dir="neutral" accent="accent-green"  glow="glow-green"  delay="fade-up-2"/>
+        <StatCard icon="📨" label="MQTT Messages"   value={totalMessages} change="This session"   dir="neutral" accent="accent-blue"   glow="glow-blue"   delay="fade-up-3"/>
+        <StatCard icon="🔗" label="Broker Status"   value={status==='connected'?'Online':status==='connecting'?'Connecting':'Offline'} change="EMQX Cloud" dir={status==='connected'?'up':status==='connecting'?'neutral':'down'} accent={status==='connected'?'accent-green':'accent-orange'} glow={status==='connected'?'glow-green':'glow-orange'} delay="fade-up-4"/>
       </div>
 
       <div className="grid-2">
         <div className="card fade-up fade-up-1">
           <div className="card-header">
-            <div><div className="card-title">Daily Breakdown</div><div className="card-sub">Units per day (orange = high)</div></div>
+            <div><div className="card-title">Total Usage by Device</div><div className="card-sub">Aggregate m³ per topic</div></div>
           </div>
-          <div className="chart-container">
-            <canvas ref={barRef}></canvas>
-          </div>
+          {topicTotals.length === 0
+            ? <div className="empty-state" style={{padding:32}}><div className="empty-icon">📡</div><div className="empty-text">No device data yet</div><div className="empty-sub">Connect MQTT to see device data</div></div>
+            : <div className="chart-wrap"><canvas ref={canvasRef}/></div>
+          }
         </div>
+
         <div className="card fade-up fade-up-2">
-          <div className="card-header">
-            <div><div className="card-title">Monthly Trend</div><div className="card-sub">Past 8 months</div></div>
-          </div>
-          <div className="chart-container">
-            <canvas ref={lineRef}></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div className="card fade-up fade-up-3">
-        <div className="card-header">
-          <div><div className="card-title">Usage Breakdown by Day</div></div>
-        </div>
-        {DAILY_USAGE.map((d,i) => {
-          const pct = (d.usage/max)*100;
-          const high = d.usage > 25;
-          return (
-            <div key={i} style={{marginBottom:14}}>
-              <div className="meter-label">
-                <span style={{fontWeight:600,width:36,display:'inline-block'}}>{d.day}</span>
-                <span style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{color:'var(--text2)'}}>{d.usage} units</span>
-                  {high && <Badge status="high"/>}
-                </span>
-              </div>
-              <div className="meter-bar">
-                <div className={`meter-fill ${high?'warning':''}`} style={{width:`${pct}%`}}></div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── PAYMENTS PAGE ────────────────────────────────────────────
-function PaymentsPage({ user }) {
-  const [paid, setPaid] = useState(user.status === 'paid');
-  const [downloading, setDownloading] = useState(false);
-  const totalCost = (user.usage * PRICE_PER_UNIT).toFixed(2);
-
-  const handlePay = () => {
-    setTimeout(() => setPaid(true), 600);
-  };
-
-  const handleDownload = () => {
-    setDownloading(true);
-    setTimeout(() => setDownloading(false), 1500);
-  };
-
-  return (
-    <div className="page">
-      <div className="grid-2">
-        <div>
-          <div className="payment-card fade-up fade-up-1" style={{marginBottom:20}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
-              <div>
-                <div style={{fontSize:12,color:'var(--text2)',letterSpacing:'0.1em',textTransform:'uppercase',fontWeight:700}}>Current Bill</div>
-                <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>Billing period: March 2024</div>
-              </div>
-              <Badge status={paid?'paid':'pending'}/>
-            </div>
-            <div className="payment-amount"><span>₹</span>{totalCost}</div>
-            <div style={{display:'flex',gap:16,fontSize:13,color:'var(--text2)',marginBottom:20}}>
-              <span>🔥 {user.usage} units × ₹{PRICE_PER_UNIT}</span>
-            </div>
-            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-              {!paid ? (
-                <button className="btn btn-green" onClick={handlePay}>💳 Pay Now — ₹{totalCost}</button>
-              ) : (
-                <div className="alert-banner alert-success" style={{margin:0,flex:1}}>
-                  <span className="alert-icon check-anim">✅</span>
-                  <div className="alert-text"><div className="alert-title">Payment Confirmed!</div></div>
+          <div className="card-title" style={{marginBottom:16}}>Device Summary</div>
+          {totalDevices === 0
+            ? <div className="empty-state" style={{padding:28}}><div className="empty-icon">🔌</div><div className="empty-text">No Devices</div><div className="empty-sub">Waiting for ESP connections</div></div>
+            : Object.entries(devices).map(([topic, d],i)=>(
+                <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'11px 0',borderBottom:i<Object.keys(devices).length-1?'1px solid var(--border)':'none'}}>
+                  <div>
+                    <div style={{fontSize:13,fontWeight:600}}>{topic}</div>
+                    <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{fmtDateTime(d.ts)}</div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontFamily:'var(--font-head)',fontSize:16,fontWeight:700,color:'var(--green)'}}>{d.m3} m³</div>
+                    <DeviceBadge active={d.active}/>
+                  </div>
                 </div>
-              )}
-              <button className="btn btn-ghost" onClick={handleDownload}>
-                {downloading ? '⏳ Generating...' : '⬇️ Download Bill'}
-              </button>
-            </div>
-          </div>
-
-          <div className="card fade-up fade-up-2">
-            <div className="card-title" style={{marginBottom:16}}>Bill Details</div>
-            {[
-              { l: 'Customer ID', v: user.id },
-              { l: 'Name', v: user.name },
-              { l: 'Gas Consumed', v: `${user.usage} units` },
-              { l: 'Rate per Unit', v: `₹${PRICE_PER_UNIT}` },
-              { l: 'Subtotal', v: `₹${totalCost}` },
-              { l: 'Tax (18% GST)', v: `₹${(totalCost*0.18).toFixed(2)}` },
-              { l: 'Total Payable', v: `₹${(totalCost*1.18).toFixed(2)}`, bold: true },
-            ].map((r,i)=>(
-              <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:i<6?'1px solid var(--border)':'none'}}>
-                <span style={{color:'var(--text2)',fontSize:13}}>{r.l}</span>
-                {r.bold ? <strong style={{fontFamily:'var(--font-head)',fontSize:15,color:'var(--orange)'}}>{r.v}</strong> : <span style={{fontWeight:r.bold?700:500}}>{r.v}</span>}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card fade-up fade-up-3">
-          <div className="card-header">
-            <div><div className="card-title">Payment History</div><div className="card-sub">Past transactions</div></div>
-          </div>
-          <div className="timeline">
-            {[
-              { month: 'February 2024', amount: '₹2,960', status: 'paid', date: 'Feb 28', icon: '✅' },
-              { month: 'January 2024',  amount: '₹2,627', status: 'paid', date: 'Jan 30', icon: '✅' },
-              { month: 'December 2023', amount: '₹3,108', status: 'paid', date: 'Dec 31', icon: '✅' },
-              { month: 'November 2023', amount: '₹2,867', status: 'paid', date: 'Nov 29', icon: '✅' },
-              { month: 'October 2023',  amount: '₹2,183', status: 'paid', date: 'Oct 30', icon: '✅' },
-            ].map((h,i)=>(
-              <div key={i} className="timeline-item">
-                <div className="timeline-icon" style={{background:'var(--green-glow)'}}>{h.icon}</div>
-                <div className="timeline-body">
-                  <div className="timeline-title">{h.month}</div>
-                  <div className="timeline-meta">Paid on {h.date}</div>
-                </div>
-                <div>
-                  <div className="timeline-amount highlight-green">{h.amount}</div>
-                  <Badge status={h.status}/>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))
+          }
         </div>
       </div>
     </div>
   );
 }
 
-// ─── ADMIN OVERVIEW ───────────────────────────────────────────
-function AdminOverview() {
-  const chartRef = useRef();
-  const revRef = useRef();
-  const totalRevenue = USERS_DATA.reduce((a,u)=>a+(u.status==='paid'?u.usage*PRICE_PER_UNIT:0),0);
-  const totalUsage = USERS_DATA.reduce((a,u)=>a+u.usage,0);
+/* ═══════════════════════════════════════════════════════════════
+   ADMIN DEVICES PAGE
+═══════════════════════════════════════════════════════════════ */
+function AdminDevices({ mqttData }) {
+  const { messages, devices } = mqttData;
+  const [search, setSearch]   = useState('');
 
-  useChart(chartRef, {
-    type: 'bar',
-    data: {
-      labels: USERS_DATA.map(u=>u.name.split(' ')[0]),
-      datasets: [{
-        label: 'Usage',
-        data: USERS_DATA.map(u=>u.usage),
-        backgroundColor: ['rgba(34,208,122,0.7)','rgba(79,163,247,0.7)','rgba(249,115,22,0.7)','rgba(34,208,122,0.7)','rgba(79,163,247,0.7)'],
-        borderWidth: 0, borderRadius: 8,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { color: '#8fa3c8' } },
-        y: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } }
-      }
-    }
-  }, []);
-
-  useChart(revRef, {
-    type: 'line',
-    data: {
-      labels: MONTHLY_USAGE.map(m=>m.month),
-      datasets: [{
-        label: 'Revenue',
-        data: MONTHLY_USAGE.map(m=>m.revenue),
-        borderColor: '#4fa3f7',
-        backgroundColor: 'rgba(79,163,247,0.07)',
-        borderWidth: 2.5, tension: 0.4, fill: true,
-        pointBackgroundColor: '#4fa3f7',
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } },
-        y: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } }
-      }
-    }
-  }, []);
-
-  const paidCount = USERS_DATA.filter(u=>u.status==='paid').length;
-  const pendCount = USERS_DATA.filter(u=>u.status==='pending').length;
-  const overdCount = USERS_DATA.filter(u=>u.status==='overdue').length;
+  const rows = Object.entries(devices)
+    .filter(([t]) => t.toLowerCase().includes(search.toLowerCase()))
+    .map(([topic, d]) => {
+      const topicMsgs  = messages.filter(m=>m.topic===topic);
+      const totalM3    = topicMsgs.reduce((a,m)=>a+m.m3,0).toFixed(2);
+      const readingCnt = topicMsgs.length;
+      return { topic, ...d, totalM3, readingCnt };
+    });
 
   return (
     <div className="page">
-      <div className="stats-grid">
-        <StatCard icon="👥" label="Total Users" value={USERS_DATA.length} change="+2 this month" changeDir="up" accentClass="accent-blue" glowClass="glow-blue" delay="fade-up-1"/>
-        <StatCard icon="🔥" label="Total Consumed" value={`${totalUsage.toFixed(0)}u`} change="Across all users" changeDir="neutral" accentClass="accent-green" glowClass="glow-green" delay="fade-up-2"/>
-        <StatCard icon="💰" label="Total Revenue" value={`₹${(totalRevenue/1000).toFixed(1)}K`} change="+12% vs last month" changeDir="up" accentClass="accent-orange" glowClass="glow-orange" delay="fade-up-3"/>
-        <StatCard icon="⚡" label="Avg Usage" value={`${(totalUsage/USERS_DATA.length).toFixed(0)}u`} change="Per user/month" changeDir="neutral" accentClass="accent-blue" glowClass="glow-blue" delay="fade-up-4"/>
-      </div>
-
-      <div className="grid-2">
-        <div className="card fade-up fade-up-1">
-          <div className="card-header">
-            <div><div className="card-title">Per User Consumption</div><div className="card-sub">Monthly usage</div></div>
-          </div>
-          <div className="chart-container">
-            <canvas ref={chartRef}></canvas>
-          </div>
-        </div>
-        <div className="card fade-up fade-up-2">
-          <div className="card-header">
-            <div><div className="card-title">Revenue Trend</div><div className="card-sub">8-month overview</div></div>
-          </div>
-          <div className="chart-container">
-            <canvas ref={revRef}></canvas>
-          </div>
-        </div>
-      </div>
-
-      <div className="card fade-up fade-up-3">
-        <div className="card-header">
-          <div><div className="card-title">Payment Overview</div></div>
-        </div>
-        <div style={{display:'flex',gap:20,flexWrap:'wrap'}}>
-          {[
-            {l:'Paid',count:paidCount,color:'var(--green)',bg:'var(--green-glow)',icon:'✅'},
-            {l:'Pending',count:pendCount,color:'var(--orange)',bg:'var(--orange-glow)',icon:'⏳'},
-            {l:'Overdue',count:overdCount,color:'var(--red)',bg:'rgba(242,95,92,0.15)',icon:'🚨'},
-          ].map((s,i)=>(
-            <div key={i} style={{flex:1,minWidth:140,padding:'20px',background:'var(--bg2)',borderRadius:12,border:'1px solid var(--border)',textAlign:'center'}}>
-              <div style={{fontSize:28,marginBottom:8}}>{s.icon}</div>
-              <div style={{fontFamily:'var(--font-head)',fontSize:32,fontWeight:800,color:s.color}}>{s.count}</div>
-              <div style={{fontSize:12,color:'var(--text2)',marginTop:4,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.06em'}}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── ADMIN USERS ──────────────────────────────────────────────
-function AdminUsers() {
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
-  const filtered = USERS_DATA.filter(u => {
-    const matchSearch = u.name.toLowerCase().includes(search.toLowerCase()) || u.id.includes(search);
-    const matchFilter = filter === 'all' || u.status === filter;
-    return matchSearch && matchFilter;
-  });
-
-  return (
-    <div className="page">
-      <div className="stats-grid" style={{gridTemplateColumns:'repeat(3,1fr)',marginBottom:20}}>
-        <StatCard icon="👥" label="Total Users" value={USERS_DATA.length} accentClass="accent-blue" glowClass="glow-blue" delay="fade-up-1"/>
-        <StatCard icon="✅" label="Paid" value={USERS_DATA.filter(u=>u.status==='paid').length} accentClass="accent-green" glowClass="glow-green" delay="fade-up-2"/>
-        <StatCard icon="⚠️" label="Outstanding" value={USERS_DATA.filter(u=>u.status!=='paid').length} accentClass="accent-orange" glowClass="glow-orange" delay="fade-up-3"/>
+      <div className="stats-grid" style={{gridTemplateColumns:'repeat(3,1fr)'}}>
+        <StatCard icon="📡" label="Total Seen"     value={Object.keys(devices).length} accent="accent-blue"   glow="glow-blue"   delay="fade-up-1"/>
+        <StatCard icon="🟢" label="Online Now"     value={Object.values(devices).filter(d=>d.active).length}  accent="accent-green"  glow="glow-green"  delay="fade-up-2"/>
+        <StatCard icon="⚫" label="Offline"        value={Object.values(devices).filter(d=>!d.active).length} accent="accent-orange" glow="glow-orange" delay="fade-up-3"/>
       </div>
 
       <div className="card fade-up fade-up-2">
-        <div className="card-header" style={{flexWrap:'wrap',gap:12}}>
-          <div><div className="card-title">User Management</div></div>
-          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-            <input className="form-input" style={{width:220,padding:'8px 12px'}} placeholder="🔍 Search user..."
-              value={search} onChange={e=>setSearch(e.target.value)}/>
-            <select className="custom-select" value={filter} onChange={e=>setFilter(e.target.value)}>
-              <option value="all">All Status</option>
-              <option value="paid">Paid</option>
-              <option value="pending">Pending</option>
-              <option value="overdue">Overdue</option>
-            </select>
-            <button className="btn btn-green btn-sm">+ Add User</button>
-          </div>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead><tr><th>User</th><th>ID</th><th>Gas Usage</th><th>Amount</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody>
-              {filtered.map((u,i)=>(
-                <tr key={i}>
-                  <td>
-                    <div style={{display:'flex',alignItems:'center',gap:10}}>
-                      <div style={{width:34,height:34,borderRadius:8,background:`linear-gradient(135deg,var(--blue),var(--green))`,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:13,color:'#fff',flexShrink:0}}>{u.name[0]}</div>
-                      <div><strong>{u.name}</strong><div style={{fontSize:11,color:'var(--text3)'}}>{u.email}</div></div>
-                    </div>
-                  </td>
-                  <td><span className="user-id">{u.id}</span></td>
-                  <td>
-                    <div style={{minWidth:120}}>
-                      <div style={{display:'flex',justifyContent:'space-between',fontSize:12,marginBottom:4}}>
-                        <span>{u.usage}u</span>
-                        <span style={{color:'var(--text3)'}}>{u.limit}u max</span>
-                      </div>
-                      <div className="meter-bar" style={{height:6}}>
-                        <div className={`meter-fill ${u.usage/u.limit>0.9?'danger':u.usage/u.limit>0.7?'warning':''}`} style={{width:`${Math.min(u.usage/u.limit*100,100)}%`}}></div>
-                      </div>
-                    </div>
-                  </td>
-                  <td><strong>₹{(u.usage*PRICE_PER_UNIT).toFixed(0)}</strong></td>
-                  <td><Badge status={u.status}/></td>
-                  <td>
-                    <div style={{display:'flex',gap:6}}>
-                      <button className="btn btn-ghost btn-sm">View</button>
-                      {u.status!=='paid' && <button className="btn btn-orange btn-sm">Remind</button>}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {filtered.length === 0 && <div className="empty-state"><div className="empty-icon">🔍</div><div className="empty-text">No users found</div></div>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── ADMIN REVENUE ────────────────────────────────────────────
-function AdminRevenue() {
-  const doughRef = useRef();
-  const areaRef = useRef();
-
-  useChart(doughRef, {
-    type: 'doughnut',
-    data: {
-      labels: ['Paid', 'Pending', 'Overdue'],
-      datasets: [{
-        data: [
-          USERS_DATA.filter(u=>u.status==='paid').reduce((a,u)=>a+u.usage*PRICE_PER_UNIT,0),
-          USERS_DATA.filter(u=>u.status==='pending').reduce((a,u)=>a+u.usage*PRICE_PER_UNIT,0),
-          USERS_DATA.filter(u=>u.status==='overdue').reduce((a,u)=>a+u.usage*PRICE_PER_UNIT,0),
-        ],
-        backgroundColor: ['rgba(34,208,122,0.8)','rgba(249,115,22,0.8)','rgba(242,95,92,0.8)'],
-        borderWidth: 0,
-        hoverOffset: 8,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: '72%',
-      plugins: { legend: { labels: { color: '#8fa3c8', padding: 16 } } }
-    }
-  }, []);
-
-  useChart(areaRef, {
-    type: 'line',
-    data: {
-      labels: MONTHLY_USAGE.map(m=>m.month),
-      datasets: [
-        {
-          label: 'Revenue',
-          data: MONTHLY_USAGE.map(m=>m.revenue),
-          borderColor: '#4fa3f7', backgroundColor: 'rgba(79,163,247,0.08)',
-          borderWidth: 2, tension: 0.4, fill: true,
-          pointBackgroundColor: '#4fa3f7',
-        },
-        {
-          label: 'Target',
-          data: MONTHLY_USAGE.map(()=>3000),
-          borderColor: 'rgba(249,115,22,0.5)', borderDash: [6,3],
-          borderWidth: 1.5, pointRadius: 0, tension: 0,
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#8fa3c8' } } },
-      scales: {
-        x: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } },
-        y: { grid: { color: 'rgba(99,179,237,0.07)' }, ticks: { color: '#8fa3c8' } }
-      }
-    }
-  }, []);
-
-  const totalRev = USERS_DATA.filter(u=>u.status==='paid').reduce((a,u)=>a+u.usage*PRICE_PER_UNIT,0);
-
-  return (
-    <div className="page">
-      <div className="stats-grid">
-        <StatCard icon="💰" label="Collected" value={`₹${(totalRev/1000).toFixed(1)}K`} change="+8% vs last" changeDir="up" accentClass="accent-green" glowClass="glow-green" delay="fade-up-1"/>
-        <StatCard icon="⏳" label="Outstanding" value={`₹${(USERS_DATA.filter(u=>u.status!=='paid').reduce((a,u)=>a+u.usage*PRICE_PER_UNIT,0)/1000).toFixed(1)}K`} change="2 accounts" changeDir="down" accentClass="accent-orange" glowClass="glow-orange" delay="fade-up-2"/>
-        <StatCard icon="📊" label="Collection Rate" value={`${((USERS_DATA.filter(u=>u.status==='paid').length/USERS_DATA.length)*100).toFixed(0)}%`} change="This month" changeDir="up" accentClass="accent-blue" glowClass="glow-blue" delay="fade-up-3"/>
-        <StatCard icon="🎯" label="Monthly Target" value="₹15K" change="At ₹13.2K so far" changeDir="neutral" accentClass="accent-blue" glowClass="glow-blue" delay="fade-up-4"/>
-      </div>
-
-      <div className="grid-2">
-        <div className="card fade-up fade-up-1" style={{gridColumn:'1 / 2'}}>
-          <div className="card-header"><div><div className="card-title">Revenue vs Target</div></div></div>
-          <div className="chart-container"><canvas ref={areaRef}></canvas></div>
-        </div>
-        <div className="card fade-up fade-up-2">
-          <div className="card-header"><div><div className="card-title">Collection Split</div></div></div>
-          <div className="chart-container"><canvas ref={doughRef}></canvas></div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── ADMIN SETTINGS ───────────────────────────────────────────
-function AdminSettings() {
-  const [price, setPrice] = useState(PRICE_PER_UNIT);
-  const [limit, setLimit] = useState(200);
-  const [saved, setSaved] = useState(false);
-
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  return (
-    <div className="page">
-      <div className="grid-2">
-        <div className="card fade-up fade-up-1">
-          <div className="card-title" style={{marginBottom:20}}>Pricing Configuration</div>
-          <div className="form-group">
-            <label className="form-label">Price per Unit (₹)</label>
-            <input className="form-input" type="number" value={price} onChange={e=>setPrice(+e.target.value)}/>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Monthly Limit (units)</label>
-            <input className="form-input" type="number" value={limit} onChange={e=>setLimit(+e.target.value)}/>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Alert Threshold (%)</label>
-            <input className="form-input" type="number" defaultValue={90}/>
-          </div>
-          <button className="btn btn-green" onClick={handleSave} style={{width:'100%'}}>
-            {saved ? '✅ Saved!' : '💾 Save Settings'}
-          </button>
+        <div className="card-header" style={{flexWrap:'wrap',gap:10}}>
+          <div><div className="card-title">Connected ESP Devices</div><div className="card-sub">All devices that sent data via MQTT</div></div>
+          <input className="form-input" style={{width:220,padding:'8px 12px'}} placeholder="🔍 Filter by topic…"
+            value={search} onChange={e=>setSearch(e.target.value)}/>
         </div>
 
-        <div className="card fade-up fade-up-2">
-          <div className="card-title" style={{marginBottom:20}}>System Status</div>
-          {[
-            {l:'Gas Monitoring API', s:'Operational', ok:true},
-            {l:'Payment Gateway', s:'Operational', ok:true},
-            {l:'SMS Alerts', s:'Operational', ok:true},
-            {l:'Data Sync', s:'Last sync: 2 min ago', ok:true},
-            {l:'Backup Service', s:'Running', ok:true},
-          ].map((item,i)=>(
-            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:i<4?'1px solid var(--border)':'none'}}>
-              <span style={{fontSize:13}}>{item.l}</span>
-              <span style={{fontSize:12,color:'var(--green)',display:'flex',alignItems:'center',gap:6}}>
-                <span style={{width:6,height:6,borderRadius:'50%',background:'var(--green)',display:'inline-block',animation:'pulse 2s infinite'}}></span>
-                {item.s}
-              </span>
+        {rows.length === 0
+          ? <div className="empty-state" style={{padding:36}}>
+              <div className="empty-icon">📡</div>
+              <div className="empty-text">No Devices Found</div>
+              <div className="empty-sub">Connect MQTT broker and wait for ESP devices to send pulse data</div>
             </div>
-          ))}
+          : <div className="table-wrap">
+              <table>
+                <thead><tr><th>Topic / Device ID</th><th>Current Reading</th><th>Session Total</th><th>Messages</th><th>Last Seen</th><th>Status</th></tr></thead>
+                <tbody>
+                  {rows.map((r,i)=>(
+                    <tr key={i}>
+                      <td>
+                        <div style={{fontWeight:600,fontSize:13}}>{r.topic}</div>
+                        <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>Pulse → m³ ×{PULSE_TO_M3}</div>
+                      </td>
+                      <td><strong style={{color:'var(--green)',fontFamily:'var(--font-head)',fontSize:15}}>{r.m3} m³</strong><div style={{fontSize:10,color:'var(--text3)'}}>Pulse: {r.pulse}</div></td>
+                      <td><strong>{r.totalM3} m³</strong></td>
+                      <td><span className="pulse-badge">{r.readingCnt}</span></td>
+                      <td style={{fontSize:12,color:'var(--text2)'}}>{fmtDateTime(r.ts)}</td>
+                      <td><DeviceBadge active={r.active}/></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+        }
+      </div>
+
+      {/* Live message stream */}
+      <div className="card fade-up fade-up-3">
+        <div className="card-header">
+          <div><div className="card-title">Live Message Stream</div><div className="card-sub">All MQTT messages across devices</div></div>
+          {messages.length>0 && <LiveBadge/>}
         </div>
+        {messages.length === 0
+          ? <div className="empty-state" style={{padding:28}}><div className="empty-icon">📭</div><div className="empty-text">No messages yet</div></div>
+          : <div className="log-scroll">
+              {messages.slice(0,60).map((m,i)=>(
+                <div key={i} className="log-row">
+                  <div className="log-icon" style={{background:'var(--blue-glow)'}}>📨</div>
+                  <div className="log-body">
+                    <div className="log-title">{m.topic}</div>
+                    <div className="log-time">{fmtDateTime(m.ts)}</div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                    <div className="log-val">{m.m3} m³</div>
+                    <div style={{fontSize:10,color:'var(--text3)'}}>pulse: {m.pulse}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+        }
       </div>
     </div>
   );
 }
 
-// ─── NOTIFICATION PANEL ───────────────────────────────────────
-function NotifPanel({ onClose }) {
-  return (
-    <div className="notif-panel">
-      <div className="notif-header">
-        Notifications
-        <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text2)',fontSize:18}}>×</button>
-      </div>
-      {NOTIFICATIONS.map(n => (
-        <div key={n.id} className="notif-item">
-          <div className="notif-dot-icon" style={{background:n.bg}}>{n.icon}</div>
-          <div className="notif-body">
-            <div className="notif-title">{n.title}</div>
-            <div style={{fontSize:12,color:'var(--text2)',margin:'2px 0'}}>{n.msg}</div>
-            <div className="notif-time">{n.time}</div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// ─── MAIN APP ─────────────────────────────────────────────────
+/* ═══════════════════════════════════════════════════════════════
+   ROOT APP
+═══════════════════════════════════════════════════════════════ */
 function App() {
-  const [user, setUser] = useState(null);
-  const [page, setPage] = useState(null);
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [dark, setDark] = useState(true);
-  const [notifOpen, setNotifOpen] = useState(false);
+  const [user,       setUser]      = useState(null);
+  const [page,       setPage]      = useState(null);
+  const [collapsed,  setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen]= useState(false);
+  const [dark,       setDark]      = useState(true);
+  const [mqttCfg,    setMqttCfg]   = useState(DEFAULT_MQTT);
+  const [mqttEnabled,setMqttEnabled]= useState(false);
+  const [showCfg,    setShowCfg]   = useState(false);
+
+  // Central MQTT state shared across all pages
+  const mqttData = useMQTT(mqttCfg, mqttEnabled);
 
   useEffect(() => {
     document.documentElement.className = dark ? '' : 'light';
@@ -1600,34 +1332,62 @@ function App() {
   const handleLogin = (u) => {
     setUser(u);
     setPage(u.role === 'admin' ? 'admin-overview' : 'dashboard');
+    // Update default topic for customer
+    if (u.topic) setMqttCfg(c=>({ ...c, topic: u.topic }));
   };
 
-  const handleLogout = () => { setUser(null); setPage(null); };
+  const handleLogout = () => {
+    setUser(null); setPage(null);
+    setMqttEnabled(false);
+  };
+
+  const handleSaveCfg = (cfg) => {
+    setMqttCfg(cfg);
+    setMqttEnabled(true);
+    setShowCfg(false);
+  };
 
   if (!user) return <LoginPage onLogin={handleLogin}/>;
 
   const renderPage = () => {
+    const props = { user, mqttData };
     if (user.role === 'admin') {
-      if (page === 'admin-overview') return <AdminOverview/>;
-      if (page === 'admin-users') return <AdminUsers/>;
-      if (page === 'admin-revenue') return <AdminRevenue/>;
-      if (page === 'admin-settings') return <AdminSettings/>;
+      if (page === 'admin-overview') return <AdminOverview {...props}/>;
+      if (page === 'admin-devices')  return <AdminDevices  {...props}/>;
     } else {
-      if (page === 'dashboard') return <CustomerDashboard user={user}/>;
-      if (page === 'usage') return <UsagePage user={user}/>;
-      if (page === 'payments') return <PaymentsPage user={user}/>;
+      if (page === 'dashboard') return <CustomerDashboard {...props}/>;
+      if (page === 'usage')     return <UsagePage {...props}/>;
     }
-    return <CustomerDashboard user={user}/>;
+    return user.role === 'admin' ? <AdminOverview {...props}/> : <CustomerDashboard {...props}/>;
   };
 
   return (
     <div className="app-shell">
-      <Sidebar user={user} page={page} setPage={setPage} collapsed={collapsed} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} onLogout={handleLogout}/>
-      <div className={`main ${collapsed?'collapsed':''}`}>
-        <Topbar user={user} page={page} collapsed={collapsed} setCollapsed={setCollapsed} setMobileOpen={setMobileOpen} dark={dark} setDark={setDark} notifOpen={notifOpen} setNotifOpen={setNotifOpen}/>
+      <Sidebar
+        user={user} page={page} setPage={setPage}
+        collapsed={collapsed} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}
+        onLogout={handleLogout}
+      />
+      <div className={`main${collapsed?' collapsed':''}`}>
+        <Topbar
+          user={user} page={page}
+          collapsed={collapsed} setCollapsed={setCollapsed}
+          setMobileOpen={setMobileOpen}
+          dark={dark} setDark={setDark}
+          mqttStatus={mqttData.status}
+          onOpenConfig={()=>setShowCfg(true)}
+        />
         {renderPage()}
       </div>
-      {notifOpen && <NotifPanel onClose={()=>setNotifOpen(false)}/>}
+
+      {/* MQTT Config Modal */}
+      {showCfg && (
+        <MqttConfigModal
+          cfg={mqttCfg}
+          onSave={handleSaveCfg}
+          onClose={()=>setShowCfg(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1636,5 +1396,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
-
-
